@@ -52,16 +52,19 @@ export const authAPI = {
 export const chatAPI = {
   getConversations: () => api.get('/chat/conversations'),
   
+  getConversation: (conversationId: number) =>
+    api.get(`/chat/conversations/${conversationId}`),
+  
   getMessages: (conversationId: string) =>
     api.get(`/chat/conversations/${conversationId}/messages`),
   
-  sendMessage: (conversationId: string, content: string) =>
+  sendMessage: (conversationId: number, content: string) =>
     api.post(`/chat/conversations/${conversationId}/messages`, { content }),
   
   createConversation: (title: string) =>
     api.post('/chat/conversations', { title }),
   
-  deleteConversation: (conversationId: string) =>
+  deleteConversation: (conversationId: number) =>
     api.delete(`/chat/conversations/${conversationId}`),
 }
 
@@ -88,7 +91,7 @@ export const sshAPI = {
 }
 
 export const statsAPI = {
-  getDashboard: () => api.get('/stats/dashboard'),
+  getDashboard: () => api.get('/stats'),
   
   getActivityLog: (limit: number = 50) =>
     api.get(`/stats/activity?limit=${limit}`),

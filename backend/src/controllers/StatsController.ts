@@ -12,32 +12,36 @@ export class StatsController {
         'SELECT COUNT(*) as count FROM conversations WHERE user_id = $1',
         [userId]
       );
-      const conversationsCount = parseInt(conversationsResult.rows[0].count);
+      const totalConversations = parseInt(conversationsResult.rows[0].count);
 
       // Compter les messages
       const messagesResult = await query(
         'SELECT COUNT(*) as count FROM messages WHERE user_id = $1',
         [userId]
       );
-      const messagesCount = parseInt(messagesResult.rows[0].count);
+      const totalMessages = parseInt(messagesResult.rows[0].count);
 
       // Compter les serveurs SSH
       const serversResult = await query(
         'SELECT COUNT(*) as count FROM ssh_servers WHERE user_id = $1',
         [userId]
       );
-      const serversCount = parseInt(serversResult.rows[0].count);
+      const totalServers = parseInt(serversResult.rows[0].count);
 
-      // Compter les connexions actives (pour l'instant 0, car pas encore implémenté)
-      const activeConnectionsCount = 0;
+      // Connexions actives (0 pour l'instant)
+      const activeConnections = 0;
+
+      // Activité récente (vide pour l'instant)
+      const recentActivity: any[] = [];
 
       return res.json({
         success: true,
         data: {
-          conversations: conversationsCount,
-          messages: messagesCount,
-          servers: serversCount,
-          activeConnections: activeConnectionsCount
+          totalConversations,
+          totalMessages,
+          totalServers,
+          activeConnections,
+          recentActivity
         }
       });
 
