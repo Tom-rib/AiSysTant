@@ -81,7 +81,6 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map((stat) => (
           <div
@@ -104,7 +103,6 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card">
           <h2 className="text-xl font-bold text-text mb-4">Actions rapides</h2>
@@ -112,7 +110,7 @@ export default function Dashboard() {
             
               href="/chat"
               className="btn-primary w-full flex items-center justify-center space-x-2"
-            <a>
+            >
               <MessageSquare className="w-5 h-5" />
               <span>Nouvelle conversation</span>
             </a>
