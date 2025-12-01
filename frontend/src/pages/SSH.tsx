@@ -58,52 +58,48 @@ export default function SSH() {
   }, [])
 
   useEffect(() => {
-    // Enregistrer les listeners WebSocket UNE SEULE FOIS pour éviter les doublons
-    if (listenersRegisteredRef.current) return
-
     const token = localStorage.getItem('token')
-    if (token) {
-      socketService.connect(token)
-      
-      // Nettoyer d'abord tous les anciens listeners
-      socketService.offAll('ssh_output')
-      socketService.offAll('ssh_error')
-      socketService.offAll('ssh_connected')
-      socketService.offAll('ssh_disconnected')
+    if (!token) return
 
-      // Enregistrer les nouveaux listeners
-      socketService.on('ssh_output', (data: { serverId: string; output: string }) => {
-        const serverId = parseInt(data.serverId)
-        addTerminalLine(serverId, data.output, 'output')
-      })
-      
-      socketService.on('ssh_error', (data: { serverId: string; error: string }) => {
-        const serverId = parseInt(data.serverId)
-        addTerminalLine(serverId, data.error, 'error')
-      })
-      
-      socketService.on('ssh_connected', (data: { serverId: string }) => {
-        const serverId = parseInt(data.serverId)
-        updateServerStatus(serverId, 'connected')
-        addTerminalLine(serverId, `✓ Connecté au serveur ${data.serverId}`, 'output')
-      })
-      
-      socketService.on('ssh_disconnected', (data: { serverId: string }) => {
-        const serverId = parseInt(data.serverId)
-        updateServerStatus(serverId, 'disconnected')
-        addTerminalLine(serverId, `✗ Déconnecté du serveur ${data.serverId}`, 'error')
-      })
-
-      listenersRegisteredRef.current = true
-    }
+    socketService.connect(token)
 
     return () => {
+      // Cleanup seulement au unmount, pas à chaque render
       socketService.offAll('ssh_output')
       socketService.offAll('ssh_error')
       socketService.offAll('ssh_connected')
       socketService.offAll('ssh_disconnected')
     }
   }, [])
+
+  useEffect(() => {
+    // Enregistrer les listeners WebSocket UNE SEULE FOIS pour éviter les doublons
+    if (listenersRegisteredRef.current) return
+
+    socketService.on('ssh_output', (data: { serverId: string; output: string }) => {
+      const serverId = parseInt(data.serverId)
+      addTerminalLine(serverId, data.output, 'output')
+    })
+    
+    socketService.on('ssh_error', (data: { serverId: string; error: string }) => {
+      const serverId = parseInt(data.serverId)
+      addTerminalLine(serverId, data.error, 'error')
+    })
+    
+    socketService.on('ssh_connected', (data: { serverId: string }) => {
+      const serverId = parseInt(data.serverId)
+      updateServerStatus(serverId, 'connected')
+      addTerminalLine(serverId, `✓ Connecté au serveur ${data.serverId}`, 'output')
+    })
+    
+    socketService.on('ssh_disconnected', (data: { serverId: string }) => {
+      const serverId = parseInt(data.serverId)
+      updateServerStatus(serverId, 'disconnected')
+      addTerminalLine(serverId, `✗ Déconnecté du serveur ${data.serverId}`, 'error')
+    })
+
+    listenersRegisteredRef.current = true
+  }, [addTerminalLine])
 
   useEffect(() => {
     scrollToBottom()
