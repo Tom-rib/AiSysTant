@@ -100,6 +100,10 @@ class SocketService {
     this.socket?.off(event, callback)
   }
 
+  offAll(event: string) {
+    this.socket?.removeAllListeners(event)
+  }
+
   emit(event: string, ...args: any[]) {
     this.socket?.emit(event, ...args)
   }

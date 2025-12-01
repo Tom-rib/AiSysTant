@@ -31,6 +31,7 @@ export default function SSH() {
   const [command, setCommand] = useState('')
   const [isExecuting, setIsExecuting] = useState(false)
   const terminalEndRef = useRef<HTMLDivElement>(null)
+  const listenersRegisteredRef = useRef(false)
 
   // Utiliser le contexte SSH au lieu du state local
   const { 
@@ -54,38 +55,53 @@ export default function SSH() {
 
   useEffect(() => {
     loadServers()
-    
-    // Connecter WebSocket pour les sorties SSH
+  }, [])
+
+  useEffect(() => {
+    // Enregistrer les listeners WebSocket UNE SEULE FOIS pour éviter les doublons
+    if (listenersRegisteredRef.current) return
+
     const token = localStorage.getItem('token')
     if (token) {
       socketService.connect(token)
       
-      socketService.onSSHOutput((data) => {
+      // Nettoyer d'abord tous les anciens listeners
+      socketService.offAll('ssh_output')
+      socketService.offAll('ssh_error')
+      socketService.offAll('ssh_connected')
+      socketService.offAll('ssh_disconnected')
+
+      // Enregistrer les nouveaux listeners
+      socketService.on('ssh_output', (data: { serverId: string; output: string }) => {
         const serverId = parseInt(data.serverId)
         addTerminalLine(serverId, data.output, 'output')
       })
       
-      socketService.onSSHError((data) => {
+      socketService.on('ssh_error', (data: { serverId: string; error: string }) => {
         const serverId = parseInt(data.serverId)
         addTerminalLine(serverId, data.error, 'error')
       })
       
-      socketService.onSSHConnected((data) => {
+      socketService.on('ssh_connected', (data: { serverId: string }) => {
         const serverId = parseInt(data.serverId)
         updateServerStatus(serverId, 'connected')
         addTerminalLine(serverId, `✓ Connecté au serveur ${data.serverId}`, 'output')
       })
       
-      socketService.onSSHDisconnected((data) => {
+      socketService.on('ssh_disconnected', (data: { serverId: string }) => {
         const serverId = parseInt(data.serverId)
         updateServerStatus(serverId, 'disconnected')
         addTerminalLine(serverId, `✗ Déconnecté du serveur ${data.serverId}`, 'error')
       })
+
+      listenersRegisteredRef.current = true
     }
 
     return () => {
-      // Ne pas déconnecter le socket pour garder la connexion
-      // socketService.disconnect()
+      socketService.offAll('ssh_output')
+      socketService.offAll('ssh_error')
+      socketService.offAll('ssh_connected')
+      socketService.offAll('ssh_disconnected')
     }
   }, [])
 
