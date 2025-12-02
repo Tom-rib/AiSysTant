@@ -67,13 +67,7 @@ export default function SSH() {
     // Connecter le socket
     socketService.connect(token)
 
-    // ⚠️ IMPORTANT: Nettoyer d'abord TOUS les anciens listeners avant d'en ajouter de nouveaux
-    socketService.offAll('ssh_output')
-    socketService.offAll('ssh_error')
-    socketService.offAll('ssh_connected')
-    socketService.offAll('ssh_disconnected')
-
-    // Enregistrer les listeners (une seule fois)
+    // Enregistrer les listeners (une seule fois au montage)
     socketService.on('ssh_output', (data: { serverId: string; output: string }) => {
       const serverId = parseInt(data.serverId)
       addTerminalLine(serverId, data.output, 'output')
@@ -103,11 +97,6 @@ export default function SSH() {
     socketConnectedRef.current = true
 
     return () => {
-      // Cleanup au unmount du composant
-      socketService.offAll('ssh_output')
-      socketService.offAll('ssh_error')
-      socketService.offAll('ssh_connected')
-      socketService.offAll('ssh_disconnected')
       socketConnectedRef.current = false
     }
   }, [])

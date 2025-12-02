@@ -74,12 +74,40 @@ export default function SSHHelp() {
 
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-text mb-2">📍 Informations nécessaires:</h3>
-                  <ul className="space-y-2 text-text-light">
-                    <li>✓ <span className="font-medium">Adresse IP du serveur</span> (ex: 192.168.1.100)</li>
+                  <h3 className="font-semibold text-text mb-2">📍 Trouver l'adresse IP de votre serveur:</h3>
+                  <p className="text-sm text-text-light mb-3">Exécutez une de ces commandes selon votre système:</p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs font-semibold text-text-light mb-1">🐧 Linux:</p>
+                      <code className="block bg-gray-800 text-green-400 p-3 rounded font-mono text-xs overflow-x-auto">
+                        ip addr show
+                      </code>
+                      <p className="text-xs text-text-light mt-1">Cherchez une ligne avec "inet" commençant par 192.168 ou 10.</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-text-light mb-1">🪟 Windows - PowerShell:</p>
+                      <code className="block bg-gray-800 text-green-400 p-3 rounded font-mono text-xs overflow-x-auto">
+                        ipconfig
+                      </code>
+                      <p className="text-xs text-text-light mt-1">Cherchez "IPv4 Address" dans la section Ethernet ou WiFi.</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-text-light mb-1">🍎 macOS - Terminal:</p>
+                      <code className="block bg-gray-800 text-green-400 p-3 rounded font-mono text-xs overflow-x-auto">
+                        ifconfig | grep "inet " | grep -v 127
+                      </code>
+                      <p className="text-xs text-text-light mt-1">Cherchez l'adresse commençant par 192.168 ou 10.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-text mb-2">📋 Autres informations nécessaires:</h3>
+                  <ul className="space-y-2 text-text-light text-sm">
                     <li>✓ <span className="font-medium">Port SSH</span> (par défaut: 22)</li>
-                    <li>✓ <span className="font-medium">Nom d'utilisateur</span> (ex: root, admin)</li>
-                    <li>✓ <span className="font-medium">Mot de passe</span></li>
+                    <li>✓ <span className="font-medium">Nom d'utilisateur</span> (ex: root, admin, ou votre nom d'utilisateur)</li>
+                    <li>✓ <span className="font-medium">Mot de passe</span> de cet utilisateur</li>
                   </ul>
                 </div>
 
