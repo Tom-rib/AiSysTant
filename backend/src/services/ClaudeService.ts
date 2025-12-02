@@ -1,26 +1,35 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { MessageModel } from '../models/Message';
 
-// Configuration du client Anthropic
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
-
-const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514';
-
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
 }
 
+const CLAUDE_MODEL = process.env.CLAUDE_MODEL || 'claude-sonnet-4-20250514';
+
 export class ClaudeService {
+  // Créer un client Anthropic avec une clé API
+  private static createClient(apiKey: string): Anthropic {
+    return new Anthropic({
+      apiKey: apiKey,
+    });
+  }
+
   // Envoyer un message à Claude et obtenir une réponse
   static async sendMessage(
     message: string,
+    userApiKey: string,
     conversationId?: number,
     systemPrompt?: string
   ): Promise<string> {
     try {
+      if (!userApiKey) {
+        throw new Error('Clé API Claude non configurée. Veuillez l\'ajouter dans les paramètres.');
+      }
+
+      const anthropic = this.createClient(userApiKey);
+
       // Récupérer l'historique de conversation si un ID est fourni
       let messages: ChatMessage[] = [];
       
@@ -73,7 +82,7 @@ Utilise le markdown pour formater tes réponses.`;
       console.error('Erreur lors de l\'appel à Claude:', error);
       
       if (error.status === 401) {
-        throw new Error('Clé API Anthropic invalide. Vérifiez votre configuration.');
+        throw new Error('Clé API Anthropic invalide. Vérifiez votre configuration dans les paramètres.');
       } else if (error.status === 429) {
         throw new Error('Limite de taux atteinte. Veuillez réessayer dans quelques instants.');
       } else if (error.status === 500) {
@@ -85,8 +94,14 @@ Utilise le markdown pour formater tes réponses.`;
   }
 
   // Générer un titre de conversation basé sur les premiers messages
-  static async generateConversationTitle(messages: string[]): Promise<string> {
+  static async generateConversationTitle(messages: string[], userApiKey: string): Promise<string> {
     try {
+      if (!userApiKey) {
+        return 'Nouvelle conversation';
+      }
+
+      const anthropic = this.createClient(userApiKey);
+
       const prompt = `Génère un titre court et descriptif (maximum 50 caractères) pour une conversation qui commence par ces messages:
 
 ${messages.slice(0, 3).join('\n---\n')}
@@ -117,12 +132,21 @@ Réponds uniquement avec le titre, sans guillemets ni ponctuation finale.`;
   }
 
   // Analyser une commande et suggérer des améliorations
-  static async analyzeCommand(command: string): Promise<{
+  static async analyzeCommand(command: string, userApiKey: string): Promise<{
     safe: boolean;
     explanation: string;
     suggestions?: string[];
   }> {
     try {
+      if (!userApiKey) {
+        return {
+          safe: false,
+          explanation: 'Clé API Claude non configurée'
+        };
+      }
+
+      const anthropic = this.createClient(userApiKey);
+
       const prompt = `Analyse cette commande système et détermine si elle est sûre à exécuter:
 
 \`\`\`bash
@@ -175,7 +199,7 @@ Réponds au format JSON avec:
   }
 
   // Vérifier si l'API Claude est configurée
-  static isConfigured(): boolean {
-    return !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.length > 0;
+  static isConfigured(userApiKey?: string): boolean {
+    return !!userApiKey && userApiKey.length > 0;
   }
 }
