@@ -135,7 +135,7 @@ export class ChatController {
         role: 'user'
       });
 
-      let aiResponse: string;
+      let aiResponse: string = '';
       let executedActions: any[] = [];
       let executionMode: 'auto_executed' | 'awaiting_confirmation' | 'query' = 'query';
       let commandOutput: string | undefined;
@@ -172,15 +172,23 @@ export class ChatController {
               console.log(`[ChatController] Executing on server ${targetServerId}: ${parsed.commandToExecute}`);
               const result = await SSHService.executeCommand(targetServerId, parsed.commandToExecute, userId);
 
+              // ✅ NOUVEAU: Convertir CommandResult en CommandExecutionResult
+              const executionResult = {
+                command: result.command,
+                stdout: result.output,
+                stderr: result.error,
+                code: result.exitCode
+              };
+
               // ✅ NOUVEAU: Expliquer le résultat avec Claude
-              const explanation = await AIEngine.explainResult(result, userApiKey);
+              const explanation = await AIEngine.explainResult(executionResult, userApiKey);
 
               // ✅ NOUVEAU: Sauvegarder le message assistant avec metadata
               aiResponse = explanation;
-              commandOutput = result.stdout;
+              commandOutput = result.output;
               executionMode = 'auto_executed';
 
-              console.log(`[ChatController] Command executed successfully: code=${result.code}`);
+              console.log(`[ChatController] Command executed successfully: code=${result.exitCode}`);
             }
           }
           // ✅ NOUVEAU: Mode confirmation pour risque moyen/haut
