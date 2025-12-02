@@ -54,18 +54,18 @@ function App() {
               }
             />
             <Route
-              path="/ssh"
-              element={
-                <PrivateRoute>
-                  <SSH />
-                </PrivateRoute>
-              }
-            />
-            <Route
               path="/ssh/help"
               element={
                 <PrivateRoute>
                   <SSHHelp />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/ssh"
+              element={
+                <PrivateRoute>
+                  <SSH />
                 </PrivateRoute>
               }
             />
