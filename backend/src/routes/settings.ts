@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express'
-import { authMiddleware } from '../middleware/auth'
+import { authenticate, AuthRequest } from '../middleware/auth'
 import { query } from '../config/database'
 import crypto from 'crypto'
 
 const router = Router()
 
 // Middleware pour vérifier l'authentification
-router.use(authMiddleware)
+router.use(authenticate)
 
 // Fonction pour chiffrer la clé API
 const encryptApiKey = (apiKey: string, encryptionKey: string): string => {
