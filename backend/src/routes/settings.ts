@@ -61,10 +61,10 @@ router.get('/claude-key', async (req: Request, res: Response) => {
 })
 
 // POST: Sauvegarder ou mettre à jour la clé API Claude
-router.post('/claude-key', async (req: Request, res: Response) => {
+router.post('/claude-key', async (req: AuthRequest, res: Response) => {
   try {
     const { claudeApiKey } = req.body
-    const userId = (req as any).user?.id
+    const userId = req.user?.id
 
     if (!userId) {
       return res.status(401).json({
