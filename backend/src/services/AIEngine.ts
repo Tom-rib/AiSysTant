@@ -58,6 +58,8 @@ RÈGLES POUR riskLevel ET shouldAutoExecute:
 - pwd, whoami, date, uptime, uname, hostnames
 - git status, git log, npm list, pip list
 - curl (GET uniquement), wget (lecture uniquement)
+- ✅ apt list, apt search, apt update (lecture/cache)
+- ✅ sudo apt list, sudo apt search, sudo apt update
 
 **MOYEN RISQUE (shouldAutoExecute = false, demande confirmation):**
 - systemctl restart, systemctl reload, systemctl start (certains services)
@@ -65,6 +67,8 @@ RÈGLES POUR riskLevel ET shouldAutoExecute:
 - npm install (packages spécifiques)
 - git pull, git fetch
 - Configuration changes (modifying files)
+- ✅ apt install package, apt upgrade, apt remove (avec sudo)
+- ✅ sudo apt install, sudo apt upgrade, sudo apt autoremove
 
 **HAUT RISQUE (shouldAutoExecute = false, refuser):**
 - systemctl stop, reboot, shutdown, poweroff
@@ -74,6 +78,7 @@ RÈGLES POUR riskLevel ET shouldAutoExecute:
 - kill -9, killall
 - chmod -R 777, chown modifications à root
 - reboot, halt
+- ❌ sudo rm -rf, sudo reboot, sudo shutdown (destructeur avec privileges)
 
 EXEMPLES DE RÉPONSE VALIDE:
 
@@ -89,6 +94,54 @@ RÉPONSE JSON:
   "commandToExecute": "ls -la"
 }
 
+Utilisateur: "Liste les paquets disponibles"
+RÉPONSE JSON:
+{
+  "intent": "monitoring",
+  "confidence": 0.95,
+  "parameters": {"action": "list_packages"},
+  "riskLevel": "low",
+  "shouldAutoExecute": true,
+  "explanation": "Je vais afficher les paquets disponibles dans apt",
+  "commandToExecute": "apt list --available"
+}
+
+Utilisateur: "Update apt"
+RÉPONSE JSON:
+{
+  "intent": "action",
+  "confidence": 0.9,
+  "parameters": {"action": "update_apt_cache"},
+  "riskLevel": "low",
+  "shouldAutoExecute": true,
+  "explanation": "Je vais mettre à jour le cache apt",
+  "commandToExecute": "sudo apt update"
+}
+
+Utilisateur: "Installe nginx"
+RÉPONSE JSON:
+{
+  "intent": "action",
+  "confidence": 0.9,
+  "parameters": {"action": "install_package", "package": "nginx"},
+  "riskLevel": "medium",
+  "shouldAutoExecute": false,
+  "explanation": "Tu dois confirmer l'installation de nginx car cela va modifier le système",
+  "commandToExecute": "sudo apt install -y nginx"
+}
+
+Utilisateur: "Upgrade tous les paquets"
+RÉPONSE JSON:
+{
+  "intent": "action",
+  "confidence": 0.85,
+  "parameters": {"action": "upgrade_system"},
+  "riskLevel": "medium",
+  "shouldAutoExecute": false,
+  "explanation": "Tu dois confirmer la mise à jour du système car cela peut casser des services",
+  "commandToExecute": "sudo apt upgrade -y"
+}
+
 Utilisateur: "Redémarre nginx"
 RÉPONSE JSON:
 {
@@ -98,7 +151,19 @@ RÉPONSE JSON:
   "riskLevel": "medium",
   "shouldAutoExecute": false,
   "explanation": "Tu dois confirmer le redémarrage de nginx car c'est une action qui peut impacter le service",
-  "commandToExecute": "systemctl restart nginx"
+  "commandToExecute": "sudo systemctl restart nginx"
+}
+
+Utilisateur: "Supprime le répertoire /tmp"
+RÉPONSE JSON:
+{
+  "intent": "action",
+  "confidence": 0.9,
+  "parameters": {"action": "delete_directory"},
+  "riskLevel": "high",
+  "shouldAutoExecute": false,
+  "explanation": "DANGER: Cette action est destructrice et irreversible. Je refuse de l'exécuter.",
+  "commandToExecute": null
 }
 
 Utilisateur: "Quels sont tes capacités?"

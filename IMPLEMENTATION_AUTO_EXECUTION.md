@@ -190,8 +190,11 @@ if (executionMode === 'auto_executed') {
 - systemctl status (lecture uniquement)
 - docker ps, docker logs
 - pwd, whoami, date, uptime
-- git status, git log, npm list
+- git status, git log, npm list, pip list
 - curl (GET), wget (lecture)
+- apt list, apt search
+- sudo apt list, sudo apt search
+- sudo apt update (mise à jour cache uniquement)
 ```
 
 ### ⚠️ MOYEN RISQUE (Confirmation requise):
@@ -202,6 +205,10 @@ if (executionMode === 'auto_executed') {
 - npm install
 - git pull, git fetch
 - Modifications de fichiers
+- apt install <package>
+- apt upgrade, apt remove, apt autoremove
+- sudo apt install, sudo apt upgrade, sudo apt remove
+- sudo apt autoremove
 ```
 
 ### ❌ HAUT RISQUE (Refuser):
@@ -212,13 +219,15 @@ if (executionMode === 'auto_executed') {
 - docker rm, docker volume rm
 - kill -9, killall
 - chmod -R 777, chown root
+- sudo rm -rf, sudo reboot, sudo shutdown
+- sudo poweroff, sudo halt
 ```
 
 ---
 
 ## 🧪 Cas de Test
 
-### Test 1: Auto-exécution (Faible risque)
+### Test 1: Auto-exécution (Faible risque - ls)
 ```
 User: "Montre les fichiers"
 Expected:
@@ -228,17 +237,56 @@ Expected:
 ✅ Résultat visible dans le chat
 ```
 
-### Test 2: Confirmation requise (Moyen risque)
+### Test 2: Auto-exécution (Faible risque - apt)
 ```
-User: "Redémarre nginx"
+User: "Liste les paquets disponibles"
+Expected:
+✅ Claude exécute 'apt list --available'
+✅ Affiche les paquets
+✅ Badge "🤖 Claude a exécuté"
+✅ Résultat visible
+```
+
+### Test 3: Auto-exécution (Faible risque - sudo apt update)
+```
+User: "Update apt"
+Expected:
+✅ Claude exécute 'sudo apt update'
+✅ Affiche les updates disponibles
+✅ Badge "🤖 Claude a exécuté"
+```
+
+### Test 4: Confirmation requise (Moyen risque - apt install)
+```
+User: "Installe nginx"
 Expected:
 ⚠️ Message "Confirmation requise"
-⚠️ Affiche la commande: systemctl restart nginx
+⚠️ Affiche la commande: sudo apt install -y nginx
 ❌ N'exécute PAS automatiquement
 ✅ Attend la confirmation de l'utilisateur
 ```
 
-### Test 3: Query sans commande
+### Test 5: Confirmation requise (Moyen risque - apt upgrade)
+```
+User: "Upgrade tous les paquets"
+Expected:
+⚠️ Message "Confirmation requise"
+⚠️ Affiche la commande: sudo apt upgrade -y
+❌ N'exécute PAS automatiquement
+✅ Demande confirmation
+```
+
+### Test 6: Confirmation requise (Moyen risque - systemctl restart)
+```
+User: "Redémarre nginx"
+Expected:
+⚠️ Message "Confirmation requise"
+⚠️ Affiche la commande: sudo systemctl restart nginx
+❌ N'exécute PAS automatiquement
+✅ Attend la confirmation
+```
+
+### Test 7: Query sans commande
 ```
 User: "Quels sont tes capacités?"
 Expected:
@@ -247,13 +295,13 @@ Expected:
 ✅ Mode 'query'
 ```
 
-### Test 4: Erreur de commande
+### Test 8: Haut risque - Refusé
 ```
-User: "Execute xyzabc invalid"
+User: "Supprime le répertoire /tmp"
 Expected:
-❌ Affiche l'erreur
-❌ N'exécute PAS
-✅ Continue le chat normalement
+❌ Refus d'exécution (HIGH RISK)
+✅ Message: "Je refuse d'exécuter cette commande destructrice"
+✅ Pas d'auto-exécution
 ```
 
 ---
