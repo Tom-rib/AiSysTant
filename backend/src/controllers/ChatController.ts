@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { ConversationModel } from '../models/Conversation';
 import { MessageModel } from '../models/Message';
 import { ClaudeService } from '../services/ClaudeService';
+import { getClaudeApiKey } from '../routes/settings';
 
 export class ChatController {
   // Créer une nouvelle conversation
@@ -113,11 +114,12 @@ export class ChatController {
         });
       }
 
-      // Vérifier que Claude est configuré
-      if (!ClaudeService.isConfigured()) {
+      // Récupérer la clé API Claude de l'utilisateur
+      const userApiKey = await getClaudeApiKey(userId);
+      if (!userApiKey) {
         return res.status(503).json({
           success: false,
-          message: 'L\'IA Claude n\'est pas configurée. Veuillez ajouter une clé API Anthropic.'
+          message: 'L\'IA Claude n\'est pas configurée. Veuillez ajouter une clé API Anthropic dans les paramètres.'
         });
       }
 
@@ -130,7 +132,7 @@ export class ChatController {
       });
 
       // Obtenir la réponse de Claude
-      const aiResponse = await ClaudeService.sendMessage(content, conversationId);
+      const aiResponse = await ClaudeService.sendMessage(content, userApiKey, conversationId);
 
       // Sauvegarder la réponse de l'IA
       const assistantMessage = await MessageModel.create({
@@ -142,7 +144,7 @@ export class ChatController {
       // Générer un titre si c'est le premier message
       const messageCount = await MessageModel.countByConversationId(conversationId);
       if (messageCount === 2) { // Premier échange (user + assistant)
-        const title = await ClaudeService.generateConversationTitle([content, aiResponse]);
+        const title = await ClaudeService.generateConversationTitle([content, aiResponse], userApiKey);
         await ConversationModel.updateTitle(conversationId, title);
       }
 
@@ -240,6 +242,7 @@ export class ChatController {
   // Analyser une commande avec Claude
   static async analyzeCommand(req: AuthRequest, res: Response) {
     try {
+      const userId = req.user!.id;
       const { command } = req.body;
 
       if (!command) {
@@ -249,7 +252,16 @@ export class ChatController {
         });
       }
 
-      const analysis = await ClaudeService.analyzeCommand(command);
+      // Récupérer la clé API Claude de l'utilisateur
+      const userApiKey = await getClaudeApiKey(userId);
+      if (!userApiKey) {
+        return res.status(503).json({
+          success: false,
+          message: 'L\'IA Claude n\'est pas configurée. Veuillez ajouter une clé API Anthropic dans les paramètres.'
+        });
+      }
+
+      const analysis = await ClaudeService.analyzeCommand(command, userApiKey);
 
       return res.json({
         success: true,
