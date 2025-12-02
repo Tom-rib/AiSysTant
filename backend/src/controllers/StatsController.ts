@@ -36,13 +36,11 @@ export class StatsController {
 
       return res.json({
         success: true,
-        data: {
-          totalConversations,
-          totalMessages,
-          totalServers,
-          activeConnections,
-          recentActivity
-        }
+        totalConversations,
+        totalMessages,
+        totalServers,
+        activeConnections,
+        recentActivity
       });
 
     } catch (error: any) {
