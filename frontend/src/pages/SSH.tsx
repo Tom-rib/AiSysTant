@@ -83,13 +83,17 @@ export default function SSH() {
     
     socketService.on('ssh_connected', (data: { serverId: string }) => {
       const serverId = parseInt(data.serverId)
-      updateServerStatus(serverId, 'connected')
+      setServers(prev =>
+        prev.map(s => (s.id === serverId ? { ...s, status: 'connected' as const } : s))
+      )
       addTerminalLine(serverId, `✓ Connecté au serveur ${data.serverId}`, 'output')
     })
     
     socketService.on('ssh_disconnected', (data: { serverId: string }) => {
       const serverId = parseInt(data.serverId)
-      updateServerStatus(serverId, 'disconnected')
+      setServers(prev =>
+        prev.map(s => (s.id === serverId ? { ...s, status: 'disconnected' as const } : s))
+      )
       addTerminalLine(serverId, `✗ Déconnecté du serveur ${data.serverId}`, 'error')
     })
 
@@ -103,7 +107,7 @@ export default function SSH() {
       socketService.offAll('ssh_disconnected')
       socketConnectedRef.current = false
     }
-  }, [])
+  }, [addTerminalLine, setServers])
 
   useEffect(() => {
     scrollToBottom()
