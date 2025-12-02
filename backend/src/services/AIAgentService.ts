@@ -12,53 +12,76 @@ export class AIAgentService {
   static async parseAIResponse(response: string): Promise<AIAction[]> {
     const actions: AIAction[] = [];
     
-    // Regex pour détecter les actions
-    const commandRegex = /\[COMMAND:(\d+):(.*?)\]/g;
-    const installRegex = /\[INSTALL:(\d+):(.*?)\]/g;
-    const readFileRegex = /\[READ:(\d+):(.*?)\]/g;
-    const writeFileRegex = /\[WRITE:(\d+):(.*?)\|(.*?)\]/g;
+    console.log('Parsing response for actions:', response.substring(0, 200) + '...');
+
+    // Regex pour détecter les actions - plus permissive pour gérer les espaces
+    const commandRegex = /\[COMMAND:\s*(\d+)\s*:\s*(.+?)\s*\]/g;
+    const installRegex = /\[INSTALL:\s*(\d+)\s*:\s*(.+?)\s*\]/g;
+    const readFileRegex = /\[READ:\s*(\d+)\s*:\s*(.+?)\s*\]/g;
+    const writeFileRegex = /\[WRITE:\s*(\d+)\s*:\s*(.+?)\s*\|\s*(.+?)\s*\]/g;
+    const infoRegex = /\[INFO:\s*(\d+)\s*\]/g;
 
     let match;
 
     // Extraire les commandes
     while ((match = commandRegex.exec(response)) !== null) {
+      const command = match[2].trim();
+      console.log(`Found COMMAND action: server ${match[1]}, command: ${command}`);
       actions.push({
         type: 'command',
         serverId: parseInt(match[1]),
-        params: { command: match[2] }
+        params: { command }
       });
     }
 
     // Extraire les installations
     while ((match = installRegex.exec(response)) !== null) {
+      const packageName = match[2].trim();
+      console.log(`Found INSTALL action: server ${match[1]}, package: ${packageName}`);
       actions.push({
         type: 'install',
         serverId: parseInt(match[1]),
-        params: { packageName: match[2] }
+        params: { packageName }
       });
     }
 
     // Extraire les lectures de fichiers
     while ((match = readFileRegex.exec(response)) !== null) {
+      const filePath = match[2].trim();
+      console.log(`Found READ action: server ${match[1]}, file: ${filePath}`);
       actions.push({
         type: 'read_file',
         serverId: parseInt(match[1]),
-        params: { filePath: match[2] }
+        params: { filePath }
       });
     }
 
     // Extraire les écritures de fichiers
     while ((match = writeFileRegex.exec(response)) !== null) {
+      const filePath = match[2].trim();
+      const content = match[3].trim();
+      console.log(`Found WRITE action: server ${match[1]}, file: ${filePath}`);
       actions.push({
         type: 'write_file',
         serverId: parseInt(match[1]),
         params: { 
-          filePath: match[2],
-          content: match[3]
+          filePath,
+          content
         }
       });
     }
 
+    // Extraire les demandes d'info système
+    while ((match = infoRegex.exec(response)) !== null) {
+      console.log(`Found INFO action: server ${match[1]}`);
+      actions.push({
+        type: 'info',
+        serverId: parseInt(match[1]),
+        params: {}
+      });
+    }
+
+    console.log(`Total actions parsed: ${actions.length}`);
     return actions;
   }
 
@@ -158,25 +181,36 @@ export class AIAgentService {
   ): Promise<{ response: string; executedActions: any[] }> {
     const executedActions: any[] = [];
 
+    // Vérifier qu'il y a au moins un serveur disponible
+    if (!servers || servers.length === 0) {
+      throw new Error('Aucun serveur SSH disponible');
+    }
+
     // Construire le prompt système pour l'agent
     const systemPrompt = `Tu es AiSystant, un agent AI expert en DevOps et administration système.
-Tu peux analyser des problèmes et exécuter des actions SSH automatiquement pour:
-- Installer des paquets
-- Exécuter des commandes
-- Lire et modifier des fichiers
-- Obtenir des informations système
+Tu es capable d'exécuter automatiquement des actions SSH sur les serveurs disponibles.
 
-Pour exécuter des actions, utilise ces formats exactement:
-[COMMAND:SERVER_ID:commande_à_exécuter]
-[INSTALL:SERVER_ID:nom_du_paquet]
-[READ:SERVER_ID:/chemin/du/fichier]
-[WRITE:SERVER_ID:/chemin/du/fichier|contenu_du_fichier]
-[INFO:SERVER_ID]
+INSTRUCTIONS CRITIQUES - Tu DOIS toujours:
+1. Analyser le problème décrit par l'utilisateur
+2. Planifier les actions nécessaires
+3. INCLURE les actions dans ta réponse en utilisant LES FORMATS EXACTEMENT comme indiqué ci-dessous
+4. Expliquer ce que tu vas faire AVANT d'inclure les balises d'action
+5. Les balises d'action seront exécutées automatiquement
+
+FORMAT DES ACTIONS (ne change PAS ces formats):
+- Exécuter une commande: [COMMAND:SERVER_ID:ta_commande_ici]
+- Installer un paquet: [INSTALL:SERVER_ID:nom_du_paquet]
+- Lire un fichier: [READ:SERVER_ID:/chemin/du/fichier]
+- Écrire un fichier: [WRITE:SERVER_ID:/chemin/fichier|contenu_à_écrire]
+- Obtenir les infos système: [INFO:SERVER_ID]
 
 Serveurs disponibles:
-${servers.map((s: any) => `- Serveur ${s.id}: ${s.name} (${s.username}@${s.host}:${s.port})`).join('\n')}
+${servers.map((s: any) => `- ID ${s.id}: ${s.name} (${s.username}@${s.host}:${s.port})`).join('\n')}
 
-Sois proactif et propose des solutions automatiques. Explique ce que tu vas faire AVANT d'exécuter les actions.`;
+EXEMPLE: Si l'utilisateur demande "Vérifie l'espace disque", tu dois répondre:
+"Je vais vérifier l'espace disque sur le serveur XXX. [COMMAND:1:df -h] ou [INFO:1]"
+
+Rappel: Sois précis dans les numéros de serveur et ne modifie JAMAIS les formats des balises.`;
 
     try {
       // Obtenir la réponse initiale de Claude
@@ -190,9 +224,12 @@ Sois proactif et propose des solutions automatiques. Explique ce que tu vas fair
       // Analyser la réponse pour extraire les actions
       const actions = await this.parseAIResponse(initialResponse);
 
+      console.log(`Parsed ${actions.length} actions from Claude response`);
+
       // Exécuter chaque action
       const actionResults: string[] = [];
       for (const action of actions) {
+        console.log(`Executing action: ${action.type} on server ${action.serverId}`);
         const result = await this.executeAction(action, userId);
         actionResults.push(
           `${action.type.toUpperCase()} sur serveur ${action.serverId}: ${result.success ? '✅ Succès' : '❌ Erreur'}\n${result.output || result.error}`
