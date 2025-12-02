@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { 
   Plus, 
   Server, 
@@ -9,7 +10,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Loader,
-  RotateCcw
+  RotateCcw,
+  HelpCircle
 } from 'lucide-react'
 import { sshAPI } from '../services/api'
 import { socketService } from '../services/socket'
@@ -26,6 +28,7 @@ interface SSHServer {
 }
 
 export default function SSH() {
+  const navigate = useNavigate()
   const [servers, setServers] = useState<SSHServer[]>([])
   const [isAddingServer, setIsAddingServer] = useState(false)
   const [command, setCommand] = useState('')
@@ -222,13 +225,20 @@ export default function SSH() {
       <div className="h-[calc(100vh-4rem)] flex">
         {/* Sidebar - Liste des serveurs */}
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 space-y-2">
             <button
               onClick={() => setIsAddingServer(true)}
               className="w-full btn-primary flex items-center justify-center space-x-2"
             >
               <Plus className="w-5 h-5" />
               <span>Ajouter un serveur</span>
+            </button>
+            <button
+              onClick={() => navigate('/ssh/help')}
+              className="w-full btn-outline flex items-center justify-center space-x-2"
+            >
+              <HelpCircle className="w-5 h-5" />
+              <span>Guide SSH</span>
             </button>
           </div>
 
