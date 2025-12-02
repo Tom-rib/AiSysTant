@@ -234,12 +234,72 @@ export default function SSH() {
 
           <div className="flex-1 overflow-y-auto scrollbar-thin">
             {servers.length === 0 ? (
-              <div className="p-8 text-center">
-                <Server className="w-12 h-12 text-text-light mx-auto mb-4" />
-                <p className="text-text-light">Aucun serveur</p>
-                <p className="text-sm text-text-lighter mt-2">
-                  Ajoutez votre premier serveur SSH
-                </p>
+              <div className="p-8 text-center space-y-6">
+                <div>
+                  <Server className="w-12 h-12 text-text-light mx-auto mb-4" />
+                  <p className="text-text-light">Aucun serveur</p>
+                  <p className="text-sm text-text-lighter mt-2">
+                    Ajoutez votre premier serveur SSH
+                  </p>
+                </div>
+                
+                <div className="text-left bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <p className="text-xs font-semibold text-text mb-3">📖 Exemple de connexion SSH:</p>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <p className="text-text-light font-medium">1. Ouvrir le port SSH (si nécessaire):</p>
+                      <div className="space-y-1 mt-1">
+                        <div>
+                          <p className="text-text-lighter text-xs">📌 Linux - UFW (Ubuntu/Debian):</p>
+                          <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-0.5 overflow-x-auto">
+                            sudo ufw allow 22/tcp
+                          </code>
+                        </div>
+                        <div>
+                          <p className="text-text-lighter text-xs">📌 Linux - iptables (Autres):</p>
+                          <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-0.5 overflow-x-auto">
+                            sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+                          </code>
+                        </div>
+                        <div>
+                          <p className="text-text-lighter text-xs">📌 Windows - PowerShell (Admin):</p>
+                          <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-0.5 overflow-x-auto">
+                            netsh advfirewall firewall add rule name="SSH" dir=in action=allow protocol=tcp localport=22
+                          </code>
+                        </div>
+                        <div>
+                          <p className="text-text-lighter text-xs">📌 macOS - Firewall (System Preferences):</p>
+                          <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-0.5 overflow-x-auto">
+                            sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
+                          </code>
+                          <p className="text-text-lighter text-xs mt-1">Ou activer SSH: System Settings → General → Sharing → Remote Login</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-text-light font-medium">2. Commande SSH standard:</p>
+                      <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-1 overflow-x-auto">
+                        ssh username@192.168.1.100
+                      </code>
+                    </div>
+                    <div>
+                      <p className="text-text-light font-medium">3. Avec port personnalisé:</p>
+                      <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-1 overflow-x-auto">
+                        ssh -p 2222 username@192.168.1.100
+                      </code>
+                    </div>
+                    <div>
+                      <p className="text-text-light font-medium">4. Remplissez le formulaire avec:</p>
+                      <ul className="list-disc list-inside text-text-light mt-1 space-y-1">
+                        <li><span className="font-medium">Nom:</span> Surnom du serveur</li>
+                        <li><span className="font-medium">Host:</span> 192.168.1.100</li>
+                        <li><span className="font-medium">Port:</span> 22 (ou autre)</li>
+                        <li><span className="font-medium">Username:</span> votre login</li>
+                        <li><span className="font-medium">Password:</span> votre mot de passe</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="p-2 space-y-2">
