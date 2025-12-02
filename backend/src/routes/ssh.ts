@@ -84,4 +84,25 @@ router.get('/history', SSHController.getCommandHistory);
  */
 router.post('/test-connection', SSHController.testConnection);
 
+/**
+ * @route   POST /api/ssh/servers/:id/read-file
+ * @desc    Lire le contenu d'un fichier
+ * @access  Private
+ */
+router.post('/servers/:id/read-file', SSHController.readFile);
+
+/**
+ * @route   POST /api/ssh/servers/:id/write-file
+ * @desc    Créer ou modifier un fichier
+ * @access  Private
+ */
+router.post('/servers/:id/write-file', SSHController.writeFile);
+
+/**
+ * @route   POST /api/ssh/servers/:id/install-package
+ * @desc    Installer un paquet
+ * @access  Private
+ */
+router.post('/servers/:id/install-package', SSHController.installPackage);
+
 export default router;
