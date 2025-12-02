@@ -77,6 +77,20 @@ const migrate = async () => {
     `);
     console.log('✅ Table command_history créée');
 
+    // Table des paramètres utilisateur
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_settings (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        setting_name VARCHAR(255) NOT NULL,
+        setting_value TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, setting_name)
+      );
+    `);
+    console.log('✅ Table user_settings créée');
+
     // Index pour améliorer les performances
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_messages_conversation 
@@ -89,6 +103,10 @@ const migrate = async () => {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_ssh_servers_user 
       ON ssh_servers(user_id);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_user_settings_lookup
+      ON user_settings(user_id, setting_name);
     `);
     console.log('✅ Index créés');
 
