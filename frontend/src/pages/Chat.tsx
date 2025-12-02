@@ -30,6 +30,7 @@ export default function Chat() {
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSending, setIsSending] = useState(false)
+  const [useSSHAgent, setUseSSHAgent] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const messages = currentConversationId ? getMessagesForConversation(currentConversationId) : []
@@ -159,7 +160,7 @@ export default function Chat() {
     addMessageToConversation(currentConversationId, tempUserMessage)
 
     try {
-      const response = await chatAPI.sendMessage(currentConversationId, messageContent)
+      const response = await chatAPI.sendMessage(currentConversationId, messageContent, useSSHAgent)
       const data = response.data.data
       
       if (data.userMessage && data.assistantMessage) {
@@ -337,13 +338,27 @@ export default function Chat() {
 
               <div className="border-t border-gray-200 p-4 bg-white">
                 <div className="max-w-4xl mx-auto">
+                  <div className="mb-3 flex items-center space-x-2">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={useSSHAgent}
+                        onChange={(e) => setUseSSHAgent(e.target.checked)}
+                        disabled={isSending}
+                        className="rounded"
+                      />
+                      <span className="text-sm font-medium text-text">
+                        🤖 Mode Agent SSH (l'IA exécutera les commandes automatiquement)
+                      </span>
+                    </label>
+                  </div>
                   <div className="flex items-end space-x-4">
                     <div className="flex-1">
                       <textarea
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder="Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"
+                        placeholder={useSSHAgent ? "Décrivez le problème à résoudre (ex: 'nginx ne démarre pas')" : "Tapez votre message... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"}
                         className="input resize-none"
                         rows={3}
                         disabled={isSending}
@@ -357,7 +372,7 @@ export default function Chat() {
                       {isSending ? (
                         <>
                           <Loader className="w-5 h-5 animate-spin" />
-                          <span>Envoi...</span>
+                          <span>Traitement...</span>
                         </>
                       ) : (
                         <>
@@ -368,7 +383,7 @@ export default function Chat() {
                     </button>
                   </div>
                   <p className="text-xs text-text-lighter mt-2">
-                    L'IA peut faire des erreurs. Vérifiez les informations importantes.
+                    {useSSHAgent ? "⚠️ L'IA exécutera des actions SSH sur vos serveurs. Vérifiez toujours les commandes suggérées." : "L'IA peut faire des erreurs. Vérifiez les informations importantes."}
                   </p>
                 </div>
               </div>

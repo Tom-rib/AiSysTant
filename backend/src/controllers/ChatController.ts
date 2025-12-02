@@ -3,6 +3,8 @@ import { AuthRequest } from '../middleware/auth';
 import { ConversationModel } from '../models/Conversation';
 import { MessageModel } from '../models/Message';
 import { ClaudeService } from '../services/ClaudeService';
+import { AIAgentService } from '../services/AIAgentService';
+import { SSHService } from '../services/SSHService';
 import { getClaudeApiKey } from '../routes/settings';
 
 export class ChatController {
@@ -96,7 +98,7 @@ export class ChatController {
     try {
       const userId = req.user!.id;
       const conversationId = parseInt(req.params.id);
-      const { content } = req.body;
+      const { content, useSSHAgent, serverId } = req.body;
 
       if (!content) {
         return res.status(400).json({
@@ -131,8 +133,36 @@ export class ChatController {
         role: 'user'
       });
 
-      // Obtenir la réponse de Claude
-      const aiResponse = await ClaudeService.sendMessage(content, userApiKey, conversationId);
+      let aiResponse: string;
+      let executedActions: any[] = [];
+
+      // Mode SSH Agent
+      if (useSSHAgent) {
+        // Récupérer les serveurs de l'utilisateur
+        const userServers = await SSHService.getServersByUserId(userId);
+        
+        if (userServers.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: 'Aucun serveur SSH configuré'
+          });
+        }
+
+        // Exécuter l'agent AI avec capacités SSH
+        const agentResult = await AIAgentService.runSSHAgent(
+          content,
+          conversationId,
+          userId,
+          userApiKey,
+          userServers
+        );
+
+        aiResponse = agentResult.response;
+        executedActions = agentResult.executedActions;
+      } else {
+        // Mode chat normal
+        aiResponse = await ClaudeService.sendMessage(content, userApiKey, conversationId);
+      }
 
       // Sauvegarder la réponse de l'IA
       const assistantMessage = await MessageModel.create({
@@ -152,7 +182,8 @@ export class ChatController {
         success: true,
         data: {
           userMessage,
-          assistantMessage
+          assistantMessage,
+          executedActions: executedActions.length > 0 ? executedActions : undefined
         }
       });
 
