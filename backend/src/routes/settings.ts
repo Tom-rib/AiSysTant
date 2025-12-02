@@ -131,6 +131,37 @@ router.post('/claude-key', async (req: AuthRequest, res: Response) => {
   }
 })
 
+// DELETE: Supprimer la clé API Claude
+router.delete('/claude-key', async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Non authentifié'
+      })
+    }
+
+    // Supprimer la clé API
+    await query(
+      'DELETE FROM user_settings WHERE user_id = $1 AND setting_name = $2',
+      [userId, 'claude_api_key']
+    )
+
+    res.json({
+      success: true,
+      message: 'Clé API Claude supprimée avec succès'
+    })
+  } catch (error: any) {
+    console.error('Erreur lors de la suppression de la clé API:', error)
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la suppression'
+    })
+  }
+})
+
 // Fonction pour récupérer la clé API Claude pour un utilisateur
 export const getClaudeApiKey = async (userId: number): Promise<string | null> => {
   try {
