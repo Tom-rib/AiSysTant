@@ -162,19 +162,38 @@ export default function Chat() {
     try {
       const response = await chatAPI.sendMessage(currentConversationId, messageContent, useSSHAgent)
       const data = response.data.data
+      // ✅ NOUVEAU: Récupérer le mode d'exécution
+      const executionMode = response.data.mode
       
+      console.log(`[Chat] Response mode: ${executionMode}`)
+
       if (data.userMessage && data.assistantMessage) {
+        // ✅ NOUVEAU: Ajouter les metadata d'exécution au message assistant
+        const assistantMessageWithMeta = {
+          ...data.assistantMessage,
+          commandOutput: data.commandOutput,
+          executedBy: executionMode === 'auto_executed' ? 'claude_auto' : undefined
+        }
+
         const currentMessages = getMessagesForConversation(currentConversationId)
         const withoutTemp = currentMessages.filter(m => m.id !== tempUserMessage.id)
+        
         setMessagesForConversation(currentConversationId, [
           ...withoutTemp,
           data.userMessage,
-          data.assistantMessage
+          assistantMessageWithMeta
         ])
         
         const convResponse = await chatAPI.getConversations()
         const convs = convResponse.data.data || convResponse.data.conversations || []
         setConversations(convs)
+
+        // ✅ NOUVEAU: Log pour debugging
+        if (executionMode === 'auto_executed') {
+          console.log('[Chat] ✅ Commande auto-exécutée par Claude')
+        } else if (executionMode === 'awaiting_confirmation') {
+          console.log('[Chat] ⚠️ En attente de confirmation')
+        }
       }
     } catch (error: any) {
       console.error('Erreur lors de l\'envoi du message:', error)

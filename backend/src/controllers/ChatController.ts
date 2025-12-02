@@ -5,6 +5,8 @@ import { MessageModel } from '../models/Message';
 import { ClaudeService } from '../services/ClaudeService';
 import { AIAgentService } from '../services/AIAgentService';
 import { SSHService } from '../services/SSHService';
+// ✅ NOUVEAU: Importer AIEngine pour l'auto-exécution
+import { AIEngine } from '../services/AIEngine';
 import { getClaudeApiKey } from '../routes/settings';
 
 export class ChatController {
@@ -135,9 +137,73 @@ export class ChatController {
 
       let aiResponse: string;
       let executedActions: any[] = [];
+      let executionMode: 'auto_executed' | 'awaiting_confirmation' | 'query' = 'query';
+      let commandOutput: string | undefined;
 
-      // Mode SSH Agent
-      if (useSSHAgent) {
+      // ✅ NOUVEAU: Mode auto-exécution (nouvelle logique)
+      if (!useSSHAgent) {
+        try {
+          console.log(`[ChatController] Parsing command with AIEngine for: "${content}"`);
+          
+          // ✅ NOUVEAU: Analyser la commande avec AIEngine
+          const parsed = await AIEngine.parseCommand(content, userApiKey);
+
+          // ✅ NOUVEAU: Si c'est une query sans commande, répondre normalement
+          if (parsed.intent === 'query' || !parsed.commandToExecute) {
+            console.log(`[ChatController] Query mode - using normal chat`);
+            aiResponse = await ClaudeService.sendMessage(content, userApiKey, conversationId);
+            executionMode = 'query';
+          }
+          // ✅ NOUVEAU: Vérifier shouldAutoExecute et riskLevel === 'low'
+          else if (parsed.shouldAutoExecute && parsed.riskLevel === 'low' && parsed.commandToExecute) {
+            console.log(`[ChatController] Auto-executing command: "${parsed.commandToExecute}"`);
+            
+            // ✅ NOUVEAU: Récupérer les serveurs disponibles
+            const userServers = await SSHService.getServersByUserId(userId);
+            let targetServerId = serverId || (userServers.length > 0 ? userServers[0].id : null);
+
+            if (!targetServerId || userServers.length === 0) {
+              // Pas de serveur, utiliser le mode confirmation
+              console.log(`[ChatController] No server available, fallback to confirmation mode`);
+              aiResponse = await ClaudeService.sendMessage(content, userApiKey, conversationId);
+              executionMode = 'awaiting_confirmation';
+            } else {
+              // ✅ NOUVEAU: Exécuter la commande directement
+              console.log(`[ChatController] Executing on server ${targetServerId}: ${parsed.commandToExecute}`);
+              const result = await SSHService.executeCommand(targetServerId, parsed.commandToExecute, userId);
+
+              // ✅ NOUVEAU: Expliquer le résultat avec Claude
+              const explanation = await AIEngine.explainResult(result, userApiKey);
+
+              // ✅ NOUVEAU: Sauvegarder le message assistant avec metadata
+              aiResponse = explanation;
+              commandOutput = result.stdout;
+              executionMode = 'auto_executed';
+
+              console.log(`[ChatController] Command executed successfully: code=${result.code}`);
+            }
+          }
+          // ✅ NOUVEAU: Mode confirmation pour risque moyen/haut
+          else if (parsed.commandToExecute && (parsed.riskLevel === 'medium' || parsed.riskLevel === 'high')) {
+            console.log(`[ChatController] Asking for confirmation (risk=${parsed.riskLevel}): "${parsed.commandToExecute}"`);
+            aiResponse = `⚠️ **Confirmation requise**\n\n${parsed.explanation}\n\nCommande à exécuter:\n\`\`\`bash\n${parsed.commandToExecute}\n\`\`\`\n\nVeux-tu continuer ?`;
+            executionMode = 'awaiting_confirmation';
+          }
+          // Fallback: répondre normalement
+          else {
+            aiResponse = await ClaudeService.sendMessage(content, userApiKey, conversationId);
+            executionMode = 'query';
+          }
+
+        } catch (parseError: any) {
+          console.error('[ChatController] Error in auto-execution flow:', parseError);
+          // En cas d'erreur, utiliser le mode chat normal
+          aiResponse = await ClaudeService.sendMessage(content, userApiKey, conversationId);
+          executionMode = 'query';
+        }
+      }
+      // Mode SSH Agent (legacy - garder pour compatibilité)
+      else if (useSSHAgent) {
         // Récupérer les serveurs de l'utilisateur
         const userServers = await SSHService.getServersByUserId(userId);
         
@@ -159,16 +225,20 @@ export class ChatController {
 
         aiResponse = agentResult.response;
         executedActions = agentResult.executedActions;
-      } else {
-        // Mode chat normal
-        aiResponse = await ClaudeService.sendMessage(content, userApiKey, conversationId);
+        executionMode = 'query';
       }
 
       // Sauvegarder la réponse de l'IA
       const assistantMessage = await MessageModel.create({
         conversation_id: conversationId,
         content: aiResponse,
-        role: 'assistant'
+        role: 'assistant',
+        // ✅ NOUVEAU: Ajouter metadata pour le mode d'exécution
+        metadata: {
+          executionMode,
+          commandOutput,
+          executedBy: executionMode === 'auto_executed' ? 'claude_auto' : undefined
+        }
       });
 
       // Générer un titre si c'est le premier message
@@ -178,12 +248,15 @@ export class ChatController {
         await ConversationModel.updateTitle(conversationId, title);
       }
 
+      // ✅ NOUVEAU: Retourner le mode d'exécution dans la réponse
       return res.json({
         success: true,
+        mode: executionMode,
         data: {
           userMessage,
           assistantMessage,
-          executedActions: executedActions.length > 0 ? executedActions : undefined
+          executedActions: executedActions.length > 0 ? executedActions : undefined,
+          commandOutput: executionMode === 'auto_executed' ? commandOutput : undefined
         }
       });
 
