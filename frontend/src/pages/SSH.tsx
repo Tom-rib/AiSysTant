@@ -34,6 +34,7 @@ export default function SSH() {
   const [isAddingServer, setIsAddingServer] = useState(false)
   const [command, setCommand] = useState('')
   const [isExecuting, setIsExecuting] = useState(false)
+  const [selectedServers, setSelectedServers] = useState<number[]>([])
   const terminalEndRef = useRef<HTMLDivElement>(null)
   const socketConnectedRef = useRef(false)
 
@@ -340,15 +341,18 @@ export default function SSH() {
                           {server.username}@{server.host}:{server.port}
                         </p>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deleteServer(server.id)
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
+                      <div className="flex space-x-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteServer(server.id)
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </button>
+                      </div>
                     </div>
                     
                     <div className="flex items-center space-x-2">
@@ -382,6 +386,24 @@ export default function SSH() {
         <div className="flex-1 flex flex-col">
           {selectedServer ? (
             <>
+              <div className="bg-gray-800 border-b border-gray-700 flex items-center overflow-x-auto">
+                {/* Onglets des serveurs connectés */}
+                {servers.filter(s => s.status === 'connected').map((server) => (
+                  <button
+                    key={server.id}
+                    onClick={() => setSelectedServerId(server.id)}
+                    className={`px-4 py-2 flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
+                      selectedServer === server.id
+                        ? 'border-green-400 bg-gray-700'
+                        : 'border-transparent hover:bg-gray-700'
+                    }`}
+                  >
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm text-gray-300">{server.name}</span>
+                  </button>
+                ))}
+              </div>
+
               <div className="bg-gray-800 p-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <TerminalIcon className="w-5 h-5 text-green-400" />
