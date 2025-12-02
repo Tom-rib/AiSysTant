@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Settings as SettingsIcon, Eye, EyeOff, Save, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Settings as SettingsIcon, Eye, EyeOff, Save, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Settings() {
@@ -9,6 +9,8 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [hasChanges, setHasChanges] = useState(false)
+  const [hasApiKey, setHasApiKey] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     loadSettings()
@@ -28,6 +30,7 @@ export default function Settings() {
         // Ne pas afficher la clé complète pour la sécurité, juste une indication
         if (data.hasKey) {
           setClaudeApiKey('••••••••••••••••••••••••••••••••••')
+          setHasApiKey(true)
         }
       }
     } catch (error) {
@@ -37,7 +40,7 @@ export default function Settings() {
 
   const handleSave = async () => {
     // Ne pas envoyer si c'est juste le masquage de la clé
-    if (claudeApiKey === '••••••••••••••••••••••••••••••••••') {
+    if (claudeApiKey === '••••••••••••••••••••••••••••••••••' && !hasChanges) {
       setMessage({ type: 'error', text: 'Aucun changement à enregistrer' })
       return
     }
@@ -63,9 +66,43 @@ export default function Settings() {
         setMessage({ type: 'success', text: 'Clé API Claude sauvegardée avec succès' })
         setClaudeApiKey('••••••••••••••••••••••••••••••••••')
         setHasChanges(false)
+        setHasApiKey(true)
       } else {
         const error = await response.json()
         setMessage({ type: 'error', text: error.message || 'Erreur lors de la sauvegarde' })
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: `Erreur: ${error.message}` })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleteApiKey = async () => {
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true)
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+      const response = await fetch(`${apiUrl}/api/settings/claude-key`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Clé API Claude supprimée avec succès' })
+        setClaudeApiKey('')
+        setHasChanges(false)
+        setHasApiKey(false)
+        setShowDeleteConfirm(false)
+      } else {
+        const error = await response.json()
+        setMessage({ type: 'error', text: error.message || 'Erreur lors de la suppression' })
       }
     } catch (error: any) {
       setMessage({ type: 'error', text: `Erreur: ${error.message}` })
@@ -179,10 +216,44 @@ export default function Settings() {
               <Save className="w-4 h-4" />
               <span>{isLoading ? 'Enregistrement...' : 'Enregistrer'}</span>
             </button>
+            {hasApiKey && (
+              <button
+                onClick={handleDeleteApiKey}
+                disabled={isLoading}
+                className="btn-outline flex items-center space-x-2 text-red-600 hover:bg-red-50 border-red-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{showDeleteConfirm ? 'Confirmer la suppression ?' : 'Supprimer'}</span>
+              </button>
+            )}
             {hasChanges && (
               <p className="text-sm text-yellow-600 font-medium">Changements non enregistrés</p>
             )}
           </div>
+
+          {showDeleteConfirm && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-800 mb-3">
+                ⚠️ Vous êtes sur le point de supprimer votre clé API Claude. Cette action ne peut pas être annulée.
+              </p>
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleDeleteApiKey}
+                  disabled={isLoading}
+                  className="btn-primary bg-red-600 hover:bg-red-700"
+                >
+                  {isLoading ? 'Suppression...' : 'Supprimer définitivement'}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isLoading}
+                  className="btn-outline"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* User Information */}
