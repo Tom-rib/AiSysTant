@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { query } from '../config/database';
+import { SSHService } from '../services/SSHService';
 
 export class StatsController {
   static async getUserStats(req: AuthRequest, res: Response) {
@@ -28,8 +29,17 @@ export class StatsController {
       );
       const totalServers = parseInt(serversResult.rows[0].count);
 
-      // Connexions actives (0 pour l'instant)
-      const activeConnections = 0;
+      // Compter les connexions actives de l'utilisateur
+      const userServersResult = await query(
+        'SELECT id FROM ssh_servers WHERE user_id = $1',
+        [userId]
+      );
+      let activeConnections = 0;
+      userServersResult.rows.forEach((row: any) => {
+        if (SSHService.isConnected(row.id)) {
+          activeConnections++;
+        }
+      });
 
       // Activité récente (vide pour l'instant)
       const recentActivity: any[] = [];
