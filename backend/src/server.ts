@@ -15,6 +15,7 @@ import authRoutes from './routes/auth';
 import chatRoutes from './routes/chat';
 import sshRoutes from './routes/ssh';
 import statsRoutes from './routes/stats';
+import settingsRoutes from './routes/settings';
 
 // Import des configurations
 import pool from './config/database';
@@ -154,6 +155,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/ssh', sshRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Gestion des routes non trouvées
 app.use('*', (req: Request, res: Response) => {

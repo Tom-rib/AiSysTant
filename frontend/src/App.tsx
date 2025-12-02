@@ -9,6 +9,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Chat from './pages/Chat'
 import SSH from './pages/SSH'
+import Settings from './pages/Settings'
 
 // Components
 import PrivateRoute from './components/PrivateRoute'
@@ -56,6 +57,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <SSH />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <PrivateRoute>
+                  <Settings />
                 </PrivateRoute>
               }
             />
