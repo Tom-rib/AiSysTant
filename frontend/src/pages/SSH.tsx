@@ -110,7 +110,7 @@ export default function SSH() {
       socketService.offAll('ssh_disconnected')
       socketConnectedRef.current = false
     }
-  }, [addTerminalLine, setServers])
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
