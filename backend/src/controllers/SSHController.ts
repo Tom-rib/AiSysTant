@@ -436,4 +436,112 @@ export class SSHController {
       });
     }
   }
+
+  // Lire un fichier
+  static async readFile(req: AuthRequest, res: Response) {
+    try {
+      const serverId = parseInt(req.params.id);
+      const { filePath } = req.body;
+      const userId = req.user!.id;
+
+      if (!filePath) {
+        return res.status(400).json({
+          success: false,
+          message: 'Chemin du fichier requis'
+        });
+      }
+
+      const server = await SSHService.getServerById(serverId);
+      if (!server || server.user_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Accès refusé'
+        });
+      }
+
+      const content = await SSHService.readFile(serverId, filePath);
+      return res.json({
+        success: true,
+        data: { content }
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la lecture du fichier',
+        error: error.message
+      });
+    }
+  }
+
+  // Écrire/modifier un fichier
+  static async writeFile(req: AuthRequest, res: Response) {
+    try {
+      const serverId = parseInt(req.params.id);
+      const { filePath, content } = req.body;
+      const userId = req.user!.id;
+
+      if (!filePath || content === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: 'Chemin du fichier et contenu requis'
+        });
+      }
+
+      const server = await SSHService.getServerById(serverId);
+      if (!server || server.user_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Accès refusé'
+        });
+      }
+
+      await SSHService.writeFile(serverId, filePath, content);
+      return res.json({
+        success: true,
+        message: 'Fichier créé/modifié avec succès'
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur lors de l\'écriture du fichier',
+        error: error.message
+      });
+    }
+  }
+
+  // Installer un paquet
+  static async installPackage(req: AuthRequest, res: Response) {
+    try {
+      const serverId = parseInt(req.params.id);
+      const { packageName } = req.body;
+      const userId = req.user!.id;
+
+      if (!packageName) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nom du paquet requis'
+        });
+      }
+
+      const server = await SSHService.getServerById(serverId);
+      if (!server || server.user_id !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Accès refusé'
+        });
+      }
+
+      const result = await SSHService.installPackage(serverId, packageName);
+      return res.json({
+        success: result.exitCode === 0,
+        data: result
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur lors de l\'installation du paquet',
+        error: error.message
+      });
+    }
+  }
 }

@@ -349,6 +349,140 @@ export class SSHService {
     }
   }
 
+  // Télécharger un fichier depuis le serveur
+  static async downloadFile(serverId: number, remotePath: string, localPath: string): Promise<void> {
+    try {
+      if (!this.isConnected(serverId)) {
+        const connectResult = await this.connect(serverId);
+        if (!connectResult.success) {
+          throw new Error(connectResult.message);
+        }
+      }
+
+      const ssh = this.connections.get(serverId);
+      if (!ssh) {
+        throw new Error('Connexion SSH introuvable');
+      }
+
+      await ssh.getFile(localPath, remotePath);
+      console.log(`✅ Fichier téléchargé: ${remotePath} → ${localPath}`);
+    } catch (error: any) {
+      throw new Error(`Erreur lors du téléchargement: ${error.message}`);
+    }
+  }
+
+  // Uploader un fichier vers le serveur
+  static async uploadFile(serverId: number, localPath: string, remotePath: string): Promise<void> {
+    try {
+      if (!this.isConnected(serverId)) {
+        const connectResult = await this.connect(serverId);
+        if (!connectResult.success) {
+          throw new Error(connectResult.message);
+        }
+      }
+
+      const ssh = this.connections.get(serverId);
+      if (!ssh) {
+        throw new Error('Connexion SSH introuvable');
+      }
+
+      await ssh.putFile(localPath, remotePath);
+      console.log(`✅ Fichier uploadé: ${localPath} → ${remotePath}`);
+    } catch (error: any) {
+      throw new Error(`Erreur lors de l'upload: ${error.message}`);
+    }
+  }
+
+  // Lire le contenu d'un fichier
+  static async readFile(serverId: number, remotePath: string): Promise<string> {
+    try {
+      if (!this.isConnected(serverId)) {
+        const connectResult = await this.connect(serverId);
+        if (!connectResult.success) {
+          throw new Error(connectResult.message);
+        }
+      }
+
+      const ssh = this.connections.get(serverId);
+      if (!ssh) {
+        throw new Error('Connexion SSH introuvable');
+      }
+
+      const result = await ssh.execCommand(`cat "${remotePath}"`);
+      if (result.code !== 0) {
+        throw new Error(result.stderr || 'Impossible de lire le fichier');
+      }
+      return result.stdout;
+    } catch (error: any) {
+      throw new Error(`Erreur lors de la lecture: ${error.message}`);
+    }
+  }
+
+  // Créer ou modifier un fichier
+  static async writeFile(serverId: number, remotePath: string, content: string): Promise<void> {
+    try {
+      if (!this.isConnected(serverId)) {
+        const connectResult = await this.connect(serverId);
+        if (!connectResult.success) {
+          throw new Error(connectResult.message);
+        }
+      }
+
+      const ssh = this.connections.get(serverId);
+      if (!ssh) {
+        throw new Error('Connexion SSH introuvable');
+      }
+
+      // Utiliser echo pour écrire le fichier
+      const escapedContent = content.replace(/"/g, '\\"').replace(/\$/g, '\\$');
+      const result = await ssh.execCommand(`cat > "${remotePath}" << 'EOF'\n${content}\nEOF`);
+      
+      if (result.code !== 0) {
+        throw new Error(result.stderr || 'Impossible d\'écrire le fichier');
+      }
+      console.log(`✅ Fichier créé/modifié: ${remotePath}`);
+    } catch (error: any) {
+      throw new Error(`Erreur lors de l'écriture: ${error.message}`);
+    }
+  }
+
+  // Installer un paquet
+  static async installPackage(serverId: number, packageName: string): Promise<CommandResult> {
+    try {
+      // Détecter le gestionnaire de paquets
+      const ssh = this.connections.get(serverId);
+      if (!ssh) {
+        throw new Error('Connexion SSH introuvable');
+      }
+
+      // Vérifier le système
+      const systemCheck = await ssh.execCommand('[ -f /etc/debian_version ] && echo debian || echo other');
+      const isDebian = systemCheck.stdout.trim() === 'debian';
+
+      const command = isDebian 
+        ? `sudo apt-get update && sudo apt-get install -y ${packageName}`
+        : `sudo yum install -y ${packageName}`;
+
+      const result = await ssh.execCommand(command);
+
+      return {
+        command,
+        output: result.stdout,
+        error: result.stderr,
+        exitCode: result.code || 0,
+        executedAt: new Date()
+      };
+    } catch (error: any) {
+      return {
+        command: `install ${packageName}`,
+        output: '',
+        error: error.message,
+        exitCode: 1,
+        executedAt: new Date()
+      };
+    }
+  }
+
   // Déconnecter tous les serveurs
   static async disconnectAll(): Promise<void> {
     for (const [serverId, ssh] of this.connections.entries()) {
