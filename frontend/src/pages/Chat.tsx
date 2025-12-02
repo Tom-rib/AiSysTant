@@ -62,7 +62,9 @@ export default function Chat() {
   }, [messages])
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
+    }, 0)
   }
 
   const loadConversations = async () => {
