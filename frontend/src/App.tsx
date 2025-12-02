@@ -9,6 +9,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Chat from './pages/Chat'
 import SSH from './pages/SSH'
+import SSHHelp from './pages/SSHHelp'
 import Settings from './pages/Settings'
 
 // Components
@@ -49,6 +50,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <Chat />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/ssh/help"
+              element={
+                <PrivateRoute>
+                  <SSHHelp />
                 </PrivateRoute>
               }
             />
