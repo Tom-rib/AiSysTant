@@ -11,7 +11,8 @@ import {
   CheckCircle2,
   Loader,
   RotateCcw,
-  HelpCircle
+  HelpCircle,
+  LogOut
 } from 'lucide-react'
 import { sshAPI } from '../services/api'
 import { socketService } from '../services/socket'
@@ -207,6 +208,18 @@ export default function SSH() {
     }
   }
 
+  const disconnectServer = async (serverId: number) => {
+    try {
+      await sshAPI.disconnect(serverId)
+      updateServerStatus(serverId, 'disconnected')
+      addTerminalLine(serverId, '✗ Déconnecté', 'error')
+      setSelectedServerId(null)
+    } catch (error: any) {
+      console.error('Erreur lors de la déconnexion:', error)
+      addTerminalLine(serverId, `Erreur de déconnexion: ${error.message}`, 'error')
+    }
+  }
+
   const selectedServerData = servers.find(s => s.id === selectedServer)
 
   return (
@@ -389,6 +402,15 @@ export default function SSH() {
                   >
                     <RotateCcw className="w-4 h-4 text-gray-400" />
                   </button>
+                  {selectedServerData?.status === 'connected' && (
+                    <button
+                      onClick={() => selectedServer && disconnectServer(selectedServer)}
+                      className="p-2 hover:bg-gray-700 rounded transition-colors"
+                      title="Déconnecter"
+                    >
+                      <LogOut className="w-4 h-4 text-red-400" />
+                    </button>
+                  )}
                   {selectedServerData?.status === 'connected' ? (
                     <div className="flex items-center space-x-2 px-3 py-1 bg-green-900 rounded-lg">
                       <CheckCircle2 className="w-4 h-4 text-green-400" />

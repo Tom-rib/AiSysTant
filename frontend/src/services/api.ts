@@ -86,6 +86,9 @@ export const sshAPI = {
   connect: (serverId: string) =>
     api.post(`/ssh/servers/${serverId}/connect`),
   
+  disconnect: (serverId: string) =>
+    api.post(`/ssh/servers/${serverId}/disconnect`),
+  
   executeCommand: (serverId: string, command: string) =>
     api.post(`/ssh/servers/${serverId}/execute`, { command }),
 }
