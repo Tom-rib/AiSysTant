@@ -103,7 +103,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
@@ -122,19 +122,19 @@ export default function Dashboard() {
             return (
               <div
                 key={stat.title}
-                className="card-hover animate-slide-up"
+                className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md hover:scale-105 transition-all animate-slide-up"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-text-light mb-1">{stat.title}</p>
-                    <p className="text-3xl font-bold text-text">{stat.value}</p>
-                    <p className={`text-xs mt-2 font-medium text-${stat.color}`}>
+                    <p className="text-sm text-slate-600 font-medium mb-1">{stat.title}</p>
+                    <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+                    <p className="text-xs mt-2 font-medium text-cyan-600">
                       {stat.trend}
                     </p>
                   </div>
-                  <div className={`w-12 h-12 bg-${stat.color}-100 rounded-lg flex items-center justify-center`}>
-                    <Icon className={`w-6 h-6 text-${stat.color}`} />
+                  <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center">
+                    <Icon className="w-6 h-6 text-cyan-600" />
                   </div>
                 </div>
               </div>
@@ -152,18 +152,18 @@ export default function Dashboard() {
                 <Link
                   key={action.title}
                   to={action.link}
-                  className="card-hover group animate-slide-up"
+                  className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md hover:scale-105 transition-all group animate-slide-up"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="flex items-center space-x-4">
-                    <div className={`w-16 h-16 bg-${action.color}-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <Icon className={`w-8 h-8 text-${action.color}`} />
+                    <div className="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Icon className="w-8 h-8 text-blue-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-1">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-1">
                         {action.title}
                       </h3>
-                      <p className="text-sm text-gray-300">
+                      <p className="text-sm text-slate-600">
                         {action.description}
                       </p>
                     </div>
@@ -175,9 +175,9 @@ export default function Dashboard() {
         </div>
 
         {/* System Status */}
-        <div className="mt-8 card animate-fade-in">
+        <div className="mt-8 bg-white border border-gray-200 rounded-lg p-6 shadow-sm animate-fade-in">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white">Statut du système</h2>
+            <h2 className="text-xl font-bold text-slate-900">Statut du système</h2>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm text-green-600 font-medium">Opérationnel</span>

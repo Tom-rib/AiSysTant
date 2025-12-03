@@ -6,7 +6,7 @@ import { useState } from 'react'
 // ✅ NOUVEAU: Ajouter les propriétés optionnelles pour l'exécution
 interface ChatMessageProps {
   message: {
-    id: string
+    id: string | number
     content: string
     role: 'user' | 'assistant' | 'system'
     timestamp: Date | string

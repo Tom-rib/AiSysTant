@@ -1,4 +1,4 @@
-import { ArrowLeft, HelpCircle, Terminal, Lock, Wifi, Code, Server, Copy, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, HelpCircle, Terminal, Lock, Wifi, Server, Copy, CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 

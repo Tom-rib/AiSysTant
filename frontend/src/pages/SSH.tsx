@@ -104,7 +104,7 @@ export default function SSH() {
         port: newServer.port,
         username: newServer.username,
         password: newServer.password || undefined,
-        private_key: newServer.privateKey || undefined,
+        privateKey: newServer.privateKey || undefined,
       })
 
       setNewServer({
@@ -127,7 +127,7 @@ export default function SSH() {
     if (!window.confirm('Êtes-vous sûr?')) return
 
     try {
-      await sshAPI.deleteServer(serverId)
+      await sshAPI.deleteServer(serverId.toString())
       await loadServers()
       closeSession(serverId)
     } catch (error: any) {
@@ -217,7 +217,7 @@ export default function SSH() {
         
         actualCommand = `test -d "${newPath}" && echo "OK" || echo "NOT_FOUND"`
         
-        const response = await sshAPI.executeCommand(activeServerId, actualCommand)
+        const response = await sshAPI.executeCommand(activeServerId.toString(), actualCommand)
         
         if (response.data.success && response.data.data?.output?.includes('OK')) {
           updateSessionDir(activeServerId, newPath)
@@ -230,7 +230,7 @@ export default function SSH() {
       } else {
         actualCommand = `cd "${session.currentDir}" && ${trimmedCommand}`
         
-        const response = await sshAPI.executeCommand(activeServerId, actualCommand)
+        const response = await sshAPI.executeCommand(activeServerId.toString(), actualCommand)
         
         if (response.data.success) {
           const result = response.data.data
