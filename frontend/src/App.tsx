@@ -14,6 +14,7 @@ import './styles/multi-terminal.css'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import Pricing from './pages/Pricing'
 import Dashboard from './pages/Dashboard'
 import Chat from './pages/Chat'
 import SSH from './pages/SSH'
@@ -38,6 +39,10 @@ function App() {
             <Route 
               path="/" 
               element={<Landing />} 
+            />
+            <Route 
+              path="/pricing" 
+              element={<Pricing />} 
             />
             <Route 
               path="/login" 
