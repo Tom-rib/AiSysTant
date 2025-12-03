@@ -18,6 +18,8 @@ import statsRoutes from './routes/stats';
 import settingsRoutes from './routes/settings';
 // ✅ NOUVEAU: Importer les routes du terminal SSH
 import sshTerminalRoutes from './routes/ssh-terminal';
+// ✅ NOUVEAU: Importer les routes du shell SSH persistant
+import sshShellRoutes from './routes/ssh-shell';
 
 // Import des configurations
 import pool from './config/database';
@@ -158,6 +160,8 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/ssh', sshRoutes);
 // ✅ NOUVEAU: Routes du terminal SSH interactif
 app.use('/api/ssh-terminal', sshTerminalRoutes);
+// ✅ NOUVEAU: Routes du shell SSH persistant
+app.use('/api/ssh-shell', sshShellRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/settings', settingsRoutes);
 
