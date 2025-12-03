@@ -57,8 +57,19 @@ export default function TerminalEmulator({
 
       // Ouvrir dans le DOM
       term.open(terminalRef.current);
-      fitAddon.fit();
       console.log(`[TerminalEmulator] Terminal ouvert dans DOM: ${sessionId}`);
+
+      // ✅ CORRIGÉ: Attendre que le DOM soit complètement rendu AVANT fit()
+      setTimeout(() => {
+        try {
+          if (fitAddon && terminalRef.current?.offsetHeight) {
+            fitAddon.fit();
+            console.log(`[TerminalEmulator] FitAddon appliqué: ${sessionId}`);
+          }
+        } catch (error) {
+          console.error(`[TerminalEmulator] Erreur fitAddon:`, error);
+        }
+      }, 100);
 
       // Afficher message initial
       term.writeln(`\x1B[1;32m$ Initialisation du terminal ${sessionId}\x1B[0m`);
@@ -93,41 +104,57 @@ export default function TerminalEmulator({
       return;
     }
 
-    try {
-      console.log(`[TerminalEmulator] Émission: terminal-create pour ${sessionId}`);
+    // ✅ CORRIGÉ: Vérifier que le socket est connecté AVANT d'émettre!
+    if (!socket.connected) {
+      console.warn(`[TerminalEmulator] Socket NOT connected yet: ${sessionId}`, {
+        connected: socket.connected,
+        disconnected: socket.disconnected,
+      });
+      
+      // Attendre la connexion
+      socket.once('connect', () => {
+        console.log(`[TerminalEmulator] Socket finalement connecté: ${sessionId}`);
+        emitTerminalCreate();
+      });
+      
+      return;
+    }
 
-      socket.emit(
-        'terminal-create',
-        {
-          sessionId,
-          serverId,
-          serverName,
-        },
-        (result: any) => {
-          console.log(`[TerminalEmulator] Callback terminal-create: ${sessionId}`, result);
+    emitTerminalCreate();
 
-          if (termRef.current) {
-            if (result?.success) {
-              termRef.current.writeln(`\x1B[0;32m✓ Connecté au serveur\x1B[0m`);
-              if (result.currentDir) {
-                termRef.current.writeln(`\x1B[0;36m$ ${result.currentDir}\x1B[0m`);
+    function emitTerminalCreate() {
+      try {
+        console.log(`[TerminalEmulator] Émission: terminal-create pour ${sessionId}`);
+
+        socket!.emit(
+          'terminal-create',
+          {
+            sessionId,
+            serverId,
+            serverName,
+          },
+          (result: any) => {
+            console.log(`[TerminalEmulator] Callback terminal-create: ${sessionId}`, result);
+
+            if (termRef.current) {
+              if (result?.success) {
+                termRef.current.writeln(`\x1B[0;32m✓ Connecté au serveur\x1B[0m`);
+                if (result.currentDir) {
+                  termRef.current.writeln(`\x1B[0;36m$ ${result.currentDir}\x1B[0m`);
+                }
+              } else {
+                termRef.current.writeln(
+                  `\x1B[1;31m✗ Erreur: ${result?.error || 'Erreur inconnue'}\x1B[0m`
+                );
               }
-            } else {
-              termRef.current.writeln(
-                `\x1B[1;31m✗ Erreur: ${result?.error || 'Erreur inconnue'}\x1B[0m`
-              );
             }
           }
+        );
+      } catch (error) {
+        console.error(`[TerminalEmulator] Erreur émission terminal-create:`, error);
+        if (termRef.current) {
+          termRef.current.writeln(`\x1B[1;31m✗ Erreur: ${error}\x1B[0m`);
         }
-      );
-
-      return () => {
-        console.log(`[TerminalEmulator] Cleanup 2: NO-OP - ${sessionId}`);
-      };
-    } catch (error) {
-      console.error(`[TerminalEmulator] Erreur création session: ${sessionId}`, error);
-      if (termRef.current) {
-        termRef.current.writeln(`\x1B[1;31mErreur: ${error}\x1B[0m`);
       }
     }
   }, [sessionId, serverId, serverName, socket]);
