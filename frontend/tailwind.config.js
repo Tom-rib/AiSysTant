@@ -56,6 +56,8 @@ export default {
           DEFAULT: '#0f172a',
           light: '#1e293b',
           dark: '#020617',
+          card: '#1e293b',
+          cardLight: '#334155',
         },
       },
       fontFamily: {
