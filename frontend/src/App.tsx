@@ -5,6 +5,8 @@ import { ChatProvider } from './context/ChatContext'
 
 // ✅ NOUVEAU: Importer les styles du terminal SSH
 import './styles/ssh-terminal.css'
+// ✅ NOUVEAU: Importer les styles du shell SSH persistant
+import './styles/ssh-shell.css'
 
 // Pages
 import Login from './pages/Login'

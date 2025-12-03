@@ -1,0 +1,255 @@
+/* ✅ NOUVEAU: Styles pour le shell SSH persistant */
+
+.ssh-shell-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #0a0e1a;
+  color: #00ff88;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* ✅ NOUVEAU: En-tête */
+.ssh-shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #0f1419;
+  border-bottom: 1px solid rgba(0, 255, 136, 0.2);
+  gap: 16px;
+}
+
+.ssh-shell-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ssh-shell-info svg {
+  color: #00ff88;
+  flex-shrink: 0;
+}
+
+.ssh-shell-title {
+  margin: 0;
+  padding: 0;
+  font-weight: 600;
+  color: #00ff88;
+  font-size: 15px;
+}
+
+.ssh-shell-address {
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  color: #00ccaa;
+  opacity: 0.8;
+}
+
+/* ✅ NOUVEAU: Boutons */
+.ssh-shell-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ssh-shell-btn {
+  padding: 8px 10px;
+  background-color: transparent;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  color: #00ff88;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ssh-shell-btn:hover {
+  background-color: rgba(0, 255, 136, 0.1);
+  border-color: rgba(0, 255, 136, 0.6);
+  color: #00ffaa;
+}
+
+.ssh-shell-btn-danger {
+  color: #ff4444;
+  border-color: rgba(255, 68, 68, 0.3);
+}
+
+.ssh-shell-btn-danger:hover {
+  background-color: rgba(255, 68, 68, 0.1);
+  border-color: rgba(255, 68, 68, 0.6);
+  color: #ff6666;
+}
+
+/* ✅ NOUVEAU: Zone de sortie */
+.ssh-shell-output {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background-color: #0a0e1a;
+}
+
+.ssh-shell-output::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ssh-shell-output::-webkit-scrollbar-track {
+  background: #0a0e1a;
+}
+
+.ssh-shell-output::-webkit-scrollbar-thumb {
+  background: #00ff88;
+  border-radius: 4px;
+  opacity: 0.5;
+}
+
+.ssh-shell-output::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
+}
+
+/* ✅ NOUVEAU: Lignes du terminal */
+.ssh-shell-line {
+  margin-bottom: 8px;
+  line-height: 1.6;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.ssh-shell-text {
+  color: #ffffff;
+}
+
+.ssh-shell-error {
+  color: #ff6666;
+  font-weight: 500;
+}
+
+.ssh-shell-info-text {
+  color: #00ccaa;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+/* ✅ NOUVEAU: Ligne de prompt */
+.ssh-shell-prompt-line {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.ssh-shell-user {
+  color: #00ff88;
+  font-weight: 600;
+}
+
+.ssh-shell-at {
+  color: #888888;
+}
+
+.ssh-shell-host {
+  color: #00d9ff;
+  font-weight: 600;
+}
+
+.ssh-shell-colon {
+  color: #888888;
+}
+
+.ssh-shell-cwd {
+  color: #ffaa00;
+  font-weight: 500;
+}
+
+.ssh-shell-dollar {
+  color: #00ff88;
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+/* ✅ NOUVEAU: Zone d'entrée */
+.ssh-shell-input-section {
+  padding: 12px 16px;
+  background-color: #0f1419;
+  border-top: 1px solid rgba(0, 255, 136, 0.2);
+}
+
+.ssh-shell-input {
+  flex: 1;
+  background-color: transparent;
+  color: #00ff88;
+  border: none;
+  outline: none;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  min-width: 200px;
+}
+
+.ssh-shell-input::placeholder {
+  color: #00996655;
+  opacity: 0.6;
+}
+
+.ssh-shell-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ✅ NOUVEAU: Bouton d'envoi */
+.ssh-shell-send-btn {
+  padding: 6px 10px;
+  background-color: transparent;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  color: #00ff88;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+}
+
+.ssh-shell-send-btn:hover:not(:disabled) {
+  background-color: rgba(0, 255, 136, 0.1);
+  border-color: rgba(0, 255, 136, 0.6);
+  color: #00ffaa;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.2);
+}
+
+.ssh-shell-send-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: rgba(0, 255, 136, 0.1);
+}
+
+/* ✅ NOUVEAU: Responsive */
+@media (max-width: 768px) {
+  .ssh-shell-container {
+    border-radius: 0;
+  }
+
+  .ssh-shell-header {
+    padding: 10px 12px;
+  }
+
+  .ssh-shell-output {
+    padding: 12px;
+  }
+
+  .ssh-shell-input-section {
+    padding: 10px 12px;
+  }
+
+  .ssh-shell-prompt-line {
+    font-size: 12px;
+  }
+}
