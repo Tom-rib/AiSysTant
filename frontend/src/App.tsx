@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { SSHProvider } from './context/SSHContext'
 import { ChatProvider } from './context/ChatContext'
@@ -24,15 +24,20 @@ import Settings from './pages/Settings'
 // Components
 import PrivateRoute from './components/PrivateRoute'
 import Navbar from './components/Navbar'
+import PublicNavbar from './components/PublicNavbar'
 
 function App() {
   const { isAuthenticated } = useAuth()
+  const location = useLocation()
+  
+  // Déterminer quelle navbar afficher
+  const isPublicPage = ['/', '/pricing', '/login', '/register'].includes(location.pathname)
 
   return (
     <SSHProvider>
       <ChatProvider>
         <div className="min-h-screen bg-background">
-          {isAuthenticated && <Navbar />}
+          {isAuthenticated ? <Navbar /> : isPublicPage && <PublicNavbar />}
           
           <Routes>
             {/* Public routes */}
