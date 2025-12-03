@@ -51,7 +51,7 @@ export default function Navbar() {
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     isActive(link.path)
                       ? 'bg-blue-600 text-white'
-                      : 'text-black hover:bg-gray-100'
+                      : 'text-slate-900 hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -95,7 +95,7 @@ export default function Navbar() {
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all ${
                     isActive(link.path)
                       ? 'bg-blue-600 text-white'
-                      : 'text-black hover:bg-gray-100'
+                      : 'text-slate-900 hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
