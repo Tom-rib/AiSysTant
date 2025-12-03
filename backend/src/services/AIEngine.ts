@@ -35,7 +35,9 @@ export class AIEngine {
   // ✅ NOUVEAU: Prompt système avec instruction JSON
   private static readonly SYSTEM_PROMPT = `Tu es AiSystant, un agent IA expert en DevOps et administration système.
 
-Tu dois TOUJOURS répondre UNIQUEMENT avec du JSON valide (sans texte avant ni après) au format suivant:
+IMPORTANT: Tu dois répondre UNIQUEMENT avec du JSON valide. Pas de texte avant, pas de texte après. Juste du JSON valide.
+
+Voici le format JSON exact que tu dois retourner:
 {
   "intent": "monitoring" | "action" | "query",
   "confidence": 0.0-1.0,
@@ -83,7 +85,6 @@ RÈGLES POUR riskLevel ET shouldAutoExecute:
 EXEMPLES DE RÉPONSE VALIDE:
 
 Utilisateur: "Montre les fichiers"
-RÉPONSE JSON:
 {
   "intent": "monitoring",
   "confidence": 0.95,
@@ -95,7 +96,6 @@ RÉPONSE JSON:
 }
 
 Utilisateur: "Liste les paquets disponibles"
-RÉPONSE JSON:
 {
   "intent": "monitoring",
   "confidence": 0.95,
@@ -107,7 +107,6 @@ RÉPONSE JSON:
 }
 
 Utilisateur: "Update apt"
-RÉPONSE JSON:
 {
   "intent": "action",
   "confidence": 0.9,
@@ -119,7 +118,6 @@ RÉPONSE JSON:
 }
 
 Utilisateur: "Installe nginx"
-RÉPONSE JSON:
 {
   "intent": "action",
   "confidence": 0.9,
@@ -131,7 +129,6 @@ RÉPONSE JSON:
 }
 
 Utilisateur: "Upgrade tous les paquets"
-RÉPONSE JSON:
 {
   "intent": "action",
   "confidence": 0.85,
@@ -143,7 +140,6 @@ RÉPONSE JSON:
 }
 
 Utilisateur: "Redémarre nginx"
-RÉPONSE JSON:
 {
   "intent": "action",
   "confidence": 0.9,
@@ -155,7 +151,6 @@ RÉPONSE JSON:
 }
 
 Utilisateur: "Supprime le répertoire /tmp"
-RÉPONSE JSON:
 {
   "intent": "action",
   "confidence": 0.9,
@@ -167,7 +162,6 @@ RÉPONSE JSON:
 }
 
 Utilisateur: "Quels sont tes capacités?"
-RÉPONSE JSON:
 {
   "intent": "query",
   "confidence": 0.95,
@@ -207,7 +201,13 @@ RÉPONSE JSON:
       const jsonText = textContent.text.trim();
       console.log(`[AIEngine] Claude response: ${jsonText.substring(0, 200)}...`);
 
-      const parsed: AICommandResponse = JSON.parse(jsonText);
+      // Extraire JSON du texte (au cas où Claude ajouterait du texte avant/après)
+      const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error(`Réponse JSON invalide reçue: ${jsonText.substring(0, 100)}`);
+      }
+
+      const parsed: AICommandResponse = JSON.parse(jsonMatch[0]);
 
       // ✅ NOUVEAU: Validation
       if (!parsed.riskLevel) {
