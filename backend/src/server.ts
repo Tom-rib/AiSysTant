@@ -20,6 +20,8 @@ import settingsRoutes from './routes/settings';
 import sshTerminalRoutes from './routes/ssh-terminal';
 // ✅ NOUVEAU: Importer les routes du shell SSH persistant
 import sshShellRoutes from './routes/ssh-shell';
+// ✅ NOUVEAU: Importer les handlers Socket.io pour le terminal
+import { setupTerminalSockets } from './sockets/terminal';
 
 // Import des configurations
 import pool from './config/database';
@@ -55,6 +57,9 @@ const io = new SocketIOServer(httpServer, {
   pingInterval: parseInt(process.env.WS_PING_INTERVAL || '30000'),
   pingTimeout: parseInt(process.env.WS_PING_TIMEOUT || '5000')
 });
+
+// ✅ NOUVEAU: Initialiser les sockets du terminal
+setupTerminalSockets(io);
 
 // Middleware de sécurité
 app.use(helmet({
