@@ -33,6 +33,8 @@ export default function Chat() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [useSSHAgent, setUseSSHAgent] = useState(false)
+  // ✅ NOUVEAU: State pour gérer l'onglet actif (conversations ou guide)
+  const [activeTab, setActiveTab] = useState<'conversations' | 'guide'>('conversations')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const messages = currentConversationId ? getMessagesForConversation(currentConversationId) : []
@@ -226,7 +228,8 @@ export default function Chat() {
     <div className="min-h-screen bg-background">
       <div className="h-[calc(100vh-4rem)] flex">
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 space-y-2">
+            {/* ✅ NOUVEAU: Bouton nouvelle conversation */}
             <button
               onClick={createNewConversation}
               className="w-full btn-primary flex items-center justify-center space-x-2"
@@ -234,59 +237,91 @@ export default function Chat() {
               <Plus className="w-5 h-5" />
               <span>Nouvelle conversation</span>
             </button>
+
+            {/* ✅ NOUVEAU: Onglets (Conversations et Guide) */}
+            <div className="flex gap-2 border-t pt-3">
+              <button
+                onClick={() => setActiveTab('conversations')}
+                className={`flex-1 px-3 py-2 rounded-lg font-medium transition-all text-sm ${
+                  activeTab === 'conversations'
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 text-text hover:bg-gray-200'
+                }`}
+              >
+                💬 Conversations
+              </button>
+              <button
+                onClick={() => setActiveTab('guide')}
+                className={`flex-1 px-3 py-2 rounded-lg font-medium transition-all text-sm ${
+                  activeTab === 'guide'
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 text-text hover:bg-gray-200'
+                }`}
+              >
+                📖 Guide
+              </button>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto scrollbar-thin">
-            {conversations.length === 0 ? (
-              <div className="p-8 text-center">
-                <MessageSquare className="w-12 h-12 text-text-light mx-auto mb-4" />
-                <p className="text-text-light">Aucune conversation</p>
-                <p className="text-sm text-text-lighter mt-2">
-                  Créez-en une nouvelle pour commencer
-                </p>
-              </div>
-            ) : (
-              <div className="p-2 space-y-2">
-                {conversations.map((conv) => (
-                  <div
-                    key={conv.id}
-                    className={`group p-3 rounded-lg cursor-pointer transition-all ${
-                      currentConversationId === conv.id
-                        ? 'bg-primary-50 border-2 border-primary'
-                        : 'hover:bg-gray-50 border-2 border-transparent'
-                    }`}
-                    onClick={() => loadMessages(conv.id)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text truncate">
-                          {conv.title}
-                        </p>
-                        <p className="text-xs text-text-light mt-1">
-                          {new Date(conv.created_at).toLocaleString('fr-FR', {
-                            day: 'numeric',
-                            month: 'short',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deleteConversation(conv.id)
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </button>
-                    </div>
+            {/* ✅ NOUVEAU: Afficher le contenu selon l'onglet actif */}
+            {activeTab === 'conversations' ? (
+              <>
+                {conversations.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <MessageSquare className="w-12 h-12 text-text-light mx-auto mb-4" />
+                    <p className="text-text-light">Aucune conversation</p>
+                    <p className="text-sm text-text-lighter mt-2">
+                      Créez-en une nouvelle pour commencer
+                    </p>
                   </div>
-                ))}
+                ) : (
+                  <div className="p-2 space-y-2">
+                    {conversations.map((conv) => (
+                      <div
+                        key={conv.id}
+                        className={`group p-3 rounded-lg cursor-pointer transition-all ${
+                          currentConversationId === conv.id
+                            ? 'bg-primary-50 border-2 border-primary'
+                            : 'hover:bg-gray-50 border-2 border-transparent'
+                        }`}
+                        onClick={() => loadMessages(conv.id)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-text truncate">
+                              {conv.title}
+                            </p>
+                            <p className="text-xs text-text-light mt-1">
+                              {new Date(conv.created_at).toLocaleString('fr-FR', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteConversation(conv.id)
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              /* ✅ NOUVEAU: Afficher le guide dans l'onglet */
+              <div className="p-4">
+                <ChatIAGuide />
               </div>
             )}
-          </div>
-        </div>
 
         <div className="flex-1 flex flex-col">
           {currentConversationId ? (
@@ -300,14 +335,8 @@ export default function Chat() {
                     </div>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-start h-full space-y-6 overflow-y-auto py-6">
-                    {/* ✅ NOUVEAU: Afficher le guide en premier */}
-                    <div className="w-full max-w-2xl px-6">
-                      <ChatIAGuide />
-                    </div>
-                    
-                    {/* Messages vides originaux */}
-                    <div className="text-center max-w-md pb-6">
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center max-w-md">
                       <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
                         <Bot className="w-10 h-10 text-primary" />
                       </div>
