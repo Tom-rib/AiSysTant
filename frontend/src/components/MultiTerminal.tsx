@@ -25,30 +25,50 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
   useEffect(() => {
     console.log('[MultiTerminal] useEffect: Initialisation Socket.io');
     
-    if (socketRef.current) {
-      console.log('[MultiTerminal] Socket déjà initialisé, skip');
+    if (socketRef.current?.connected) {
+      console.log('[MultiTerminal] Socket déjà connecté, skip');
       return;
     }
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
 
     console.log('[MultiTerminal] Création Socket.io avec auth:', { token: !!token, userId });
-    console.log('[MultiTerminal] localStorage contents:', { 
-      token: token ? token.substring(0, 20) + '...' : null, 
-      userId 
-    });
+
+    if (!token) {
+      console.warn('[MultiTerminal] ⚠️ PAS DE TOKEN! Socket ne se connectera pas.');
+    }
 
     // ✅ CORRIGÉ: UN SEUL socket pour tous les onglets!
-    socketRef.current = io(window.location.origin, {
-      auth: { token, userId },
+    // Déterminer l'URL correcte du backend
+    let socketUrl: string;
+    
+    if (process.env.REACT_APP_API_URL) {
+      socketUrl = process.env.REACT_APP_API_URL;
+      console.log('[MultiTerminal] Using REACT_APP_API_URL:', socketUrl);
+    } else {
+      // Par défaut: backend est sur le même host, port 3001
+      const protocol = window.location.protocol; // http: ou https:
+      const hostname = window.location.hostname; // localhost ou IP
+      socketUrl = `${protocol}//${hostname}:3001`;
+      console.log('[MultiTerminal] Using auto-detected URL:', socketUrl);
+    }
+    
+    console.log('[MultiTerminal] Socket URL:', socketUrl);
+
+    socketRef.current = io(socketUrl, {
+      auth: { 
+        token: token || '',
+        userId: userId || ''
+      },
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
+      transports: ['websocket', 'polling'] // Essayer WebSocket d'abord, puis polling
     });
 
-    console.log('[MultiTerminal] Socket créé (mais pas encore connecté)');
+    console.log('[MultiTerminal] Socket créé (mais pas encore connecté)', socketRef.current?.id);
 
     socketRef.current.on('connect', () => {
       console.log('[MultiTerminal] ✅ Socket CONNECTÉ:', socketRef.current?.id);
@@ -66,10 +86,9 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
       console.error('[MultiTerminal] Socket erreur:', error);
     });
 
-    // Cleanup: déconnecter au unmount du composant
+    // Cleanup: NE PAS fermer le socket au unmount
     return () => {
-      console.log('[MultiTerminal] Cleanup: Fermeture Socket.io');
-      // ✅ CORRIGÉ: NE PAS fermer le socket ici! Il continuera à fonctionner
+      console.log('[MultiTerminal] Cleanup: Socket restera connecté');
     };
   }, []); // Vide! Une seule fois!
 

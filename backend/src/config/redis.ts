@@ -34,10 +34,12 @@ redisClient.on('ready', () => {
 export const connectRedis = async () => {
   try {
     await redisClient.connect();
+    console.log('✅ Redis connecté');
     return redisClient;
   } catch (error) {
-    console.error('Erreur de connexion à Redis:', error);
-    throw error;
+    console.warn('⚠️ Redis non disponible (mode offline):', error);
+    // Continuer sans Redis
+    return null;
   }
 };
 
