@@ -20,6 +20,7 @@ import Chat from './pages/Chat'
 import SSH from './pages/SSH'
 import SSHHelp from './pages/SSHHelp'
 import Settings from './pages/Settings'
+import BillingPage from './pages/BillingPage'
 import { AccountSettings } from './pages/AccountSettings'
 import { SecuritySettings } from './pages/SecuritySettings'
 
@@ -98,6 +99,22 @@ function App() {
               element={
                 <PrivateRoute>
                   <Settings />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/api-keys"
+              element={
+                <PrivateRoute>
+                  <Settings />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/billing"
+              element={
+                <PrivateRoute>
+                  <BillingPage />
                 </PrivateRoute>
               }
             />

@@ -65,27 +65,11 @@ export const ProfileDropdown: React.FC = () => {
             </Link>
 
             <Link
-              to="/settings"
-              onClick={() => setIsOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-            >
-              🔑 Clé API
-            </Link>
-
-            <Link
               to="/account/security"
               onClick={() => setIsOpen(false)}
               className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
             >
               🔒 Sécurité
-            </Link>
-
-            <Link
-              to="/billing"
-              onClick={() => setIsOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
-            >
-              💳 Facturation
             </Link>
 
             <div className="border-t border-gray-200 my-2"></div>

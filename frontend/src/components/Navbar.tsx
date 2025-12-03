@@ -4,7 +4,9 @@ import {
   Terminal, 
   LayoutDashboard, 
   Menu,
-  X
+  X,
+  Key,
+  CreditCard
 } from 'lucide-react'
 import { useState } from 'react'
 import logo from '../../public/logo-192.png'
@@ -18,6 +20,8 @@ export default function Navbar() {
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/chat', label: 'Chat IA', icon: MessageSquare },
     { path: '/ssh', label: 'SSH', icon: Terminal },
+    { path: '/api-keys', label: 'Clé API', icon: Key },
+    { path: '/billing', label: 'Facturation', icon: CreditCard },
   ]
 
   const isActive = (path: string) => location.pathname === path
@@ -34,7 +38,7 @@ export default function Navbar() {
                 alt="AiSystant Logo" 
                 className="h-10 w-10 object-contain group-hover:scale-110 transition-transform"
               />
-              <span className="text-xl font-bold text-slate-900 hidden sm:block">
+              <span className="text-xl font-bold text-black hidden sm:block">
                 AiSystant
               </span>
             </Link>
@@ -51,7 +55,7 @@ export default function Navbar() {
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     isActive(link.path)
                       ? 'bg-blue-600 text-white'
-                      : 'text-slate-900 hover:bg-gray-100'
+                      : 'text-black hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -69,9 +73,9 @@ export default function Navbar() {
               className="md:hidden p-2 rounded-lg hover:bg-gray-100"
             >
               {isMenuOpen ? (
-                <X className="w-6 h-6 text-slate-900" />
+                <X className="w-6 h-6 text-black" />
               ) : (
-                <Menu className="w-6 h-6 text-slate-900" />
+                <Menu className="w-6 h-6 text-black" />
               )}
             </button>
 
@@ -95,7 +99,7 @@ export default function Navbar() {
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all ${
                     isActive(link.path)
                       ? 'bg-blue-600 text-white'
-                      : 'text-slate-900 hover:bg-gray-100'
+                      : 'text-black hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
