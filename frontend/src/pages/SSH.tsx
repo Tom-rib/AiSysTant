@@ -36,7 +36,6 @@ export default function SSH() {
   const [isExecuting, setIsExecuting] = useState(false)
   const [selectedServers, setSelectedServers] = useState<number[]>([])
   const terminalEndRef = useRef<HTMLDivElement>(null)
-  const socketConnectedRef = useRef(false)
 
   // Utiliser le contexte SSH au lieu du state local
   const { 
@@ -64,44 +63,56 @@ export default function SSH() {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (!token || socketConnectedRef.current) return
+    if (!token) return
 
     // Connecter le socket
     socketService.connect(token)
 
-    // Enregistrer les listeners (une seule fois au montage)
-    socketService.on('ssh_output', (data: { serverId: string; output: string }) => {
+    // Nettoyer les anciens listeners avant d'en ajouter de nouveaux
+    socketService.offAll('ssh_output')
+    socketService.offAll('ssh_error')
+    socketService.offAll('ssh_connected')
+    socketService.offAll('ssh_disconnected')
+
+    // Enregistrer les listeners
+    const handleSSHOutput = (data: { serverId: string; output: string }) => {
       const serverId = parseInt(data.serverId)
       addTerminalLine(serverId, data.output, 'output')
-    })
+    }
     
-    socketService.on('ssh_error', (data: { serverId: string; error: string }) => {
+    const handleSSHError = (data: { serverId: string; error: string }) => {
       const serverId = parseInt(data.serverId)
       addTerminalLine(serverId, data.error, 'error')
-    })
+    }
     
-    socketService.on('ssh_connected', (data: { serverId: string }) => {
+    const handleSSHConnected = (data: { serverId: string }) => {
       const serverId = parseInt(data.serverId)
       setServers(prev =>
         prev.map(s => (s.id === serverId ? { ...s, status: 'connected' as const } : s))
       )
       addTerminalLine(serverId, `✓ Connecté au serveur ${data.serverId}`, 'output')
-    })
+    }
     
-    socketService.on('ssh_disconnected', (data: { serverId: string }) => {
+    const handleSSHDisconnected = (data: { serverId: string }) => {
       const serverId = parseInt(data.serverId)
       setServers(prev =>
         prev.map(s => (s.id === serverId ? { ...s, status: 'disconnected' as const } : s))
       )
       addTerminalLine(serverId, `✗ Déconnecté du serveur ${data.serverId}`, 'error')
-    })
+    }
 
-    socketConnectedRef.current = true
+    socketService.on('ssh_output', handleSSHOutput)
+    socketService.on('ssh_error', handleSSHError)
+    socketService.on('ssh_connected', handleSSHConnected)
+    socketService.on('ssh_disconnected', handleSSHDisconnected)
 
     return () => {
-      socketConnectedRef.current = false
+      socketService.off('ssh_output', handleSSHOutput)
+      socketService.off('ssh_error', handleSSHError)
+      socketService.off('ssh_connected', handleSSHConnected)
+      socketService.off('ssh_disconnected', handleSSHDisconnected)
     }
-  }, [])
+  }, [addTerminalLine])
 
   useEffect(() => {
     scrollToBottom()

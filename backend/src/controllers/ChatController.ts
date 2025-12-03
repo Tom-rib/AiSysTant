@@ -147,6 +147,7 @@ export class ChatController {
           
           // ✅ NOUVEAU: Analyser la commande avec AIEngine
           const parsed = await AIEngine.parseCommand(content, userApiKey);
+          console.log(`[ChatController] ParsedCommand result:`, JSON.stringify(parsed, null, 2));
 
           // ✅ NOUVEAU: Si c'est une query sans commande, répondre normalement
           if (parsed.intent === 'query' || !parsed.commandToExecute) {
