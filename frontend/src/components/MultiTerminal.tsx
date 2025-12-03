@@ -214,24 +214,30 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
           </div>
         ) : (
           tabs.map(tab => (
-            // ✅ CORRIGÉ: Garder le composant en DOM avec display: none (pas de démontage!)
+            // ✅ CORRIGÉ: Garder le composant TOUJOURS EN DOM (pas de démontage basé sur socket!)
             <div
               key={tab.sessionId}
               className="terminal-panel"
               style={{ 
                 display: tab.isActive ? 'flex' : 'none',
                 flexDirection: 'column',
+                position: 'absolute',
+                top: '50px',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                opacity: tab.isActive ? 1 : 0,
+                pointerEvents: tab.isActive ? 'auto' : 'none',
+                transition: 'opacity 0.2s ease-in-out',
               }}
             >
-              {/* ✅ CORRIGÉ: Passer le socket global et le serverName */}
-              {socketRef.current && (
-                <TerminalEmulator
-                  sessionId={tab.sessionId}
-                  serverId={tab.serverId}
-                  serverName={tab.serverName}
-                  socket={socketRef.current}
-                />
-              )}
+              {/* ✅ CORRIGÉ: Socket existe toujours au niveau du composant parent */}
+              <TerminalEmulator
+                sessionId={tab.sessionId}
+                serverId={tab.serverId}
+                serverName={tab.serverName}
+                socket={socketRef.current!}
+              />
             </div>
           ))
         )}

@@ -172,6 +172,15 @@ export function setupTerminalSockets(io: SocketIOServer) {
           // En production, rejeter ici
         }
 
+        // ✅ CORRIGÉ: Vérifier si la session existe déjà
+        let existingSession = TerminalSessionManager.getSession(sessionId);
+        if (existingSession) {
+          console.log(`[Socket] ℹ️ Session déjà existe: ${sessionId}`);
+          callback({ success: true, currentDir: existingSession.currentDir });
+          // Ne pas ajouter les listeners à nouveau!
+          return;
+        }
+
         // Vérifier l'accès au serveur
         const server = await SSHService.getServerById(serverId);
         if (!server) {
@@ -196,34 +205,39 @@ export function setupTerminalSockets(io: SocketIOServer) {
 
         console.log(`[Socket] 📝 Résultat création: ${sessionId}`, result);
 
-        // Si succès, écouter les données du stream
+        // ✅ CORRIGÉ: Si succès, écouter les données du stream UNE SEULE FOIS
         if (result.success) {
           const session = TerminalSessionManager.getSession(sessionId);
           if (session) {
             console.log(`[Socket] 👂 Écoute stream: ${sessionId}`);
 
-            session.stream.on('data', (data: Buffer) => {
-              console.log(
-                `[Socket] 📤 Envoi output: ${sessionId} - ${data.length} bytes`
-              );
-              socket.emit('terminal-output', {
-                sessionId,
-                data: data.toString(),
+            // ✅ CORRIGÉ: Vérifier qu'on n'a pas déjà ajouté les listeners
+            if (!session.stream._listeners || !session.stream._listeners['data']) {
+              session.stream.on('data', (data: Buffer) => {
+                console.log(
+                  `[Socket] 📤 Envoi output: ${sessionId} - ${data.length} bytes`
+                );
+                socket.emit('terminal-output', {
+                  sessionId,
+                  data: data.toString(),
+                });
               });
-            });
 
-            session.stream.on('error', (error: any) => {
-              console.error(`[Socket] ⚠️ Erreur stream: ${sessionId}`, error);
-              socket.emit('terminal-error', {
-                sessionId,
-                message: error.message,
+              session.stream.on('error', (error: any) => {
+                console.error(`[Socket] ⚠️ Erreur stream: ${sessionId}`, error);
+                socket.emit('terminal-error', {
+                  sessionId,
+                  message: error.message,
+                });
               });
-            });
 
-            session.stream.on('close', () => {
-              console.log(`[Socket] 🔌 Stream fermé: ${sessionId}`);
-              socket.emit('terminal-closed', { sessionId });
-            });
+              session.stream.on('close', () => {
+                console.log(`[Socket] 🔌 Stream fermé: ${sessionId}`);
+                socket.emit('terminal-closed', { sessionId });
+              });
+            } else {
+              console.log(`[Socket] ℹ️ Listeners déjà attachés: ${sessionId}`);
+            }
           }
         }
 
