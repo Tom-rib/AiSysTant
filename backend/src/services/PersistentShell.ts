@@ -166,7 +166,7 @@ export class PersistentShellManager {
   }
 
   /**
-   * ✅ NOUVEAU: Envoyer une commande au shell et attendre la réponse
+   * ✅ CORRIGÉ: Envoyer une commande au shell et attendre la réponse
    */
   private static async sendCommand(
     session: PersistentShellSession,
@@ -180,14 +180,14 @@ export class PersistentShellManager {
     session.buffer = '';
 
     try {
-      // ✅ NOUVEAU: Envoyer un marqueur de début
-      const marker = `__START_${Date.now()}__`;
-      const endMarker = `__END_${Date.now()}__`;
+      // ✅ CORRIGÉ: Envoyer un marqueur de début UNIQUE
+      const marker = `__START_${Date.now()}_${Math.random()}__`;
+      const endMarker = `__END_${Date.now()}_${Math.random()}__`;
 
-      // ✅ NOUVEAU: Envoyer la commande avec marqueurs
-      session.channel.write(`echo "${marker}"\n`);
+      // ✅ CORRIGÉ: Envoyer la commande avec un vrai séparateur
+      session.channel.write(`printf "%s\\n" "${marker}"\n`);
       session.channel.write(`${command}\n`);
-      session.channel.write(`echo "${endMarker}"\n`);
+      session.channel.write(`printf "%s\\n" "${endMarker}"\n`);
 
       // ✅ NOUVEAU: Attendre la réponse
       const output = await this.waitForMarker(session, marker, endMarker);
@@ -231,7 +231,7 @@ export class PersistentShellManager {
   }
 
   /**
-   * ✅ NOUVEAU: Attendre les marqueurs de début et fin
+   * ✅ CORRIGÉ: Attendre les marqueurs de début et fin
    */
   private static async waitForMarker(
     session: PersistentShellSession,
@@ -241,33 +241,54 @@ export class PersistentShellManager {
     return new Promise((resolve, reject) => {
       let foundStart = false;
       let output = '';
+      let checkCount = 0;
 
       const checkBuffer = () => {
-        if (!foundStart && session.buffer.includes(startMarker)) {
-          foundStart = true;
-          const startIdx = session.buffer.indexOf(startMarker) + startMarker.length;
-          session.buffer = session.buffer.substring(startIdx);
+        checkCount++;
+        
+        // ✅ CORRIGÉ: Chercher le marqueur de début
+        if (!foundStart) {
+          const startIdx = session.buffer.indexOf(startMarker);
+          if (startIdx !== -1) {
+            foundStart = true;
+            // ✅ CORRIGÉ: Enlever TOUT jusqu'après le marqueur
+            session.buffer = session.buffer.substring(startIdx + startMarker.length);
+            console.log(`[PersistentShell] Marqueur de début trouvé, buffer restant: ${session.buffer.length} chars`);
+          }
         }
 
-        if (foundStart && session.buffer.includes(endMarker)) {
+        // ✅ CORRIGÉ: Chercher le marqueur de fin
+        if (foundStart) {
           const endIdx = session.buffer.indexOf(endMarker);
-          output = session.buffer.substring(0, endIdx).trim();
-          clearInterval(timer);
-          resolve(output);
+          if (endIdx !== -1) {
+            output = session.buffer.substring(0, endIdx).trim();
+            // ✅ CORRIGÉ: Enlever les caractères de contrôle
+            output = output.replace(/\r/g, '');
+            clearInterval(timer);
+            console.log(`[PersistentShell] Marqueur de fin trouvé, output: "${output.substring(0, 100)}..."`);
+            resolve(output);
+          }
+        }
+
+        // ✅ CORRIGÉ: Log debug tous les 10 checks
+        if (checkCount % 10 === 0) {
+          console.log(`[PersistentShell] Check ${checkCount}: foundStart=${foundStart}, bufferSize=${session.buffer.length}`);
         }
       };
 
       const timer = setInterval(checkBuffer, 50);
 
-      // ✅ NOUVEAU: Timeout
+      // ✅ NOUVEAU: Timeout plus long (10 secondes)
       setTimeout(() => {
         clearInterval(timer);
         if (foundStart) {
+          console.log(`[PersistentShell] ⚠️ Timeout avec output partiel: "${output.substring(0, 100)}..."`);
           resolve(output);
         } else {
+          console.log(`[PersistentShell] ❌ Timeout sans marqueur de début`);
           reject(new Error('Timeout en attendant la réponse du shell'));
         }
-      }, this.COMMAND_TIMEOUT);
+      }, 10000);
     });
   }
 
@@ -287,13 +308,19 @@ export class PersistentShellManager {
       // ✅ NOUVEAU: Envoyer la commande
       let result = await this.sendCommand(session, command);
 
-      // ✅ NOUVEAU: Si c'est un "cd", mettre à jour currentDir
+      // ✅ CORRIGÉ: Si c'est un "cd", TOUJOURS mettre à jour currentDir
       if (command.trim().startsWith('cd ')) {
+        console.log(`[PersistentShell] Détecté cd, mise à jour du pwd...`);
         try {
+          // ✅ CORRIGÉ: Exécuter pwd et FORCER la mise à jour
           const pwdResult = await this.sendCommand(session, 'pwd');
-          if (pwdResult.success) {
-            session.currentDir = pwdResult.output.trim();
-            console.log(`[PersistentShell] currentDir mis à jour: ${session.currentDir}`);
+          if (pwdResult.success && pwdResult.output) {
+            const newDir = pwdResult.output.trim();
+            session.currentDir = newDir;
+            result.cwd = newDir;
+            console.log(`[PersistentShell] ✅ currentDir mis à jour: ${newDir}`);
+          } else {
+            console.log(`[PersistentShell] ⚠️ pwd a échoué, currentDir reste: ${session.currentDir}`);
           }
         } catch (error) {
           console.error(`[PersistentShell] Erreur lors de la mise à jour du pwd:`, error);
@@ -303,6 +330,7 @@ export class PersistentShellManager {
       // ✅ NOUVEAU: Mettre à jour l'activité
       session.lastActivity = Date.now();
 
+      console.log(`[PersistentShell] Résultat: success=${result.success}, cwd=${result.cwd}`);
       return result;
     } catch (error: any) {
       console.error(`[PersistentShell] Erreur lors de l'exécution:`, error);
