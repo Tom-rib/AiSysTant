@@ -5,7 +5,6 @@ import {
   LayoutDashboard, 
   Menu,
   X,
-  Settings,
   Key
 } from 'lucide-react'
 import { useState } from 'react'
@@ -20,8 +19,7 @@ export default function Navbar() {
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/chat', label: 'Chat IA', icon: MessageSquare },
     { path: '/ssh', label: 'SSH', icon: Terminal },
-    { path: '/settings', label: 'Configuration', icon: Settings },
-    { path: '/api-keys', label: 'Clé API', icon: Key },
+    { path: '/settings', label: 'Clé API', icon: Key },
   ]
 
   const isActive = (path: string) => location.pathname === path
