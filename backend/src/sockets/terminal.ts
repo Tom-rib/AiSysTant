@@ -11,15 +11,21 @@ export function setupTerminalSockets(io: SocketIOServer) {
     TerminalSessionManager.closeInactiveSessions();
   }, 60 * 1000); // Toutes les minutes
 
+  // ✅ CORRIGÉ: UN SEUL io.on('connection') qui FUSIONNE tout!
   io.on('connection', (socket: Socket) => {
-    const userId = (socket.handshake.auth as any).userId;
-    const token = (socket.handshake.auth as any).token;
-    
-    console.log(`[Socket] ✅ CONNECT: ${socket.id}`, { userId, token: !!token });
+    console.log(`[Socket] ✅ CONNECT: ${socket.id}`);
 
-    // ✅ CORRIGÉ: Si pas de userId, essayer de décoder le token
-    let finalUserId = userId;
-    if (!finalUserId && token) {
+    // ✅ CORRIGÉ: Authentification robuste
+    let finalUserId: number | null = null;
+    const token = (socket.handshake.auth as any)?.token;
+    const userId = (socket.handshake.auth as any)?.userId;
+
+    // Essayer le userId direct
+    if (userId) {
+      finalUserId = parseInt(userId);
+    }
+    // Sinon décoder le token
+    else if (token) {
       try {
         const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
         finalUserId = decoded.id;
@@ -29,12 +35,122 @@ export function setupTerminalSockets(io: SocketIOServer) {
       }
     }
 
-    if (!finalUserId) {
-      console.error(`[Socket] ❌ Pas de userId trouvé!`);
-    }
+    console.log(`[Socket] Auth: userId=${finalUserId}, token=${!!token}`);
 
     /**
-     * ✅ NOUVEAU: Créer une nouvelle session de terminal
+     * ✅ EVENTS CHAT (du ancien server.ts)
+     */
+    socket.on('join_conversation', (conversationId: number) => {
+      socket.join(`conversation_${conversationId}`);
+      console.log(`[Socket] Client ${socket.id} a rejoint la conversation ${conversationId}`);
+    });
+
+    socket.on('leave_conversation', (conversationId: number) => {
+      socket.leave(`conversation_${conversationId}`);
+      console.log(`[Socket] Client ${socket.id} a quitté la conversation ${conversationId}`);
+    });
+
+    socket.on('new_message', (data: { conversationId: number; message: any }) => {
+      io.to(`conversation_${data.conversationId}`).emit('message_received', data.message);
+    });
+
+    socket.on('typing', (data: { conversationId: number; username: string }) => {
+      socket.to(`conversation_${data.conversationId}`).emit('user_typing', data);
+    });
+
+    socket.on('stop_typing', (data: { conversationId: number }) => {
+      socket.to(`conversation_${data.conversationId}`).emit('user_stop_typing', data);
+    });
+
+    /**
+     * ✅ EVENTS SSH LEGACY (du ancien server.ts)
+     */
+    socket.on('ssh_command', async (data: { serverId: string; command: string }) => {
+      if (!finalUserId) {
+        socket.emit('ssh_error', {
+          serverId: data.serverId,
+          error: 'Non authentifié'
+        });
+        return;
+      }
+
+      try {
+        const serverId = parseInt(data.serverId);
+        console.log(`[Socket] 🔧 Exécution commande SSH sur serveur ${serverId}: ${data.command}`);
+        
+        const result = await SSHService.executeCommand(serverId, data.command, finalUserId);
+        
+        socket.emit('ssh_output', {
+          serverId: data.serverId,
+          output: result.output
+        });
+
+        if (result.exitCode !== 0) {
+          socket.emit('ssh_error', {
+            serverId: data.serverId,
+            error: result.error || 'Commande échouée'
+          });
+        }
+      } catch (error: any) {
+        console.error('[Socket] ❌ Erreur SSH:', error);
+        socket.emit('ssh_error', {
+          serverId: data.serverId,
+          error: error.message
+        });
+      }
+    });
+
+    socket.on('ssh_connect', async (data: { serverId: string }) => {
+      if (!finalUserId) {
+        socket.emit('ssh_error', {
+          serverId: data.serverId,
+          error: 'Non authentifié'
+        });
+        return;
+      }
+
+      try {
+        const serverId = parseInt(data.serverId);
+        console.log(`[Socket] 🔌 Connexion SSH au serveur ${serverId}`);
+        
+        const result = await SSHService.connect(serverId);
+        
+        if (result.success) {
+          socket.emit('ssh_connected', {
+            serverId: data.serverId
+          });
+        } else {
+          socket.emit('ssh_error', {
+            serverId: data.serverId,
+            error: result.message
+          });
+        }
+      } catch (error: any) {
+        console.error('[Socket] ❌ Erreur connexion SSH:', error);
+        socket.emit('ssh_error', {
+          serverId: data.serverId,
+          error: error.message
+        });
+      }
+    });
+
+    socket.on('ssh_disconnect', async (data: { serverId: string }) => {
+      try {
+        const serverId = parseInt(data.serverId);
+        console.log(`[Socket] 🔌 Déconnexion SSH du serveur ${serverId}`);
+        
+        await SSHService.disconnect(serverId);
+        
+        socket.emit('ssh_disconnected', {
+          serverId: data.serverId
+        });
+      } catch (error: any) {
+        console.error('[Socket] ❌ Erreur déconnexion SSH:', error);
+      }
+    });
+
+    /**
+     * ✅ EVENTS TERMINAL (nouveau)
      */
     socket.on('terminal-create', async (data: any, callback: any) => {
       try {
@@ -46,7 +162,11 @@ export function setupTerminalSockets(io: SocketIOServer) {
           socketId: socket.id,
         });
 
-        // ✅ NOUVEAU: Vérifier l'accès au serveur
+        if (!finalUserId) {
+          return callback({ success: false, error: 'Non authentifié' });
+        }
+
+        // Vérifier l'accès au serveur
         const server = await SSHService.getServerById(serverId);
         if (!server) {
           console.error(`[Socket] ❌ Serveur non trouvé: ${serverId}`);
@@ -58,25 +178,24 @@ export function setupTerminalSockets(io: SocketIOServer) {
           return callback({ success: false, error: 'Accès refusé' });
         }
 
-        // ✅ NOUVEAU: Créer la session
+        // Créer la session
         console.log(`[Socket] 🔌 Création session SSH: ${sessionId}`);
         const result = await TerminalSessionManager.createSession(
           sessionId,
           socket.id,
           serverId,
-          finalUserId || 0,
+          finalUserId,
           serverName
         );
 
         console.log(`[Socket] 📝 Résultat création: ${sessionId}`, result);
 
-        // ✅ NOUVEAU: Si succès, écouter les données du stream
+        // Si succès, écouter les données du stream
         if (result.success) {
           const session = TerminalSessionManager.getSession(sessionId);
           if (session) {
             console.log(`[Socket] 👂 Écoute stream: ${sessionId}`);
 
-            // ✅ CORRIGÉ: Envoyer sur le channel GLOBAL 'terminal-output'
             session.stream.on('data', (data: Buffer) => {
               console.log(
                 `[Socket] 📤 Envoi output: ${sessionId} - ${data.length} bytes`
@@ -87,7 +206,6 @@ export function setupTerminalSockets(io: SocketIOServer) {
               });
             });
 
-            // Écouter les erreurs
             session.stream.on('error', (error: any) => {
               console.error(`[Socket] ⚠️ Erreur stream: ${sessionId}`, error);
               socket.emit('terminal-error', {
@@ -96,7 +214,6 @@ export function setupTerminalSockets(io: SocketIOServer) {
               });
             });
 
-            // Écouter la fermeture
             session.stream.on('close', () => {
               console.log(`[Socket] 🔌 Stream fermé: ${sessionId}`);
               socket.emit('terminal-closed', { sessionId });
@@ -111,9 +228,6 @@ export function setupTerminalSockets(io: SocketIOServer) {
       }
     });
 
-    /**
-     * ✅ NOUVEAU: Envoyer l'input utilisateur au terminal
-     */
     socket.on('terminal-input', async (data: any, callback: any) => {
       try {
         const { sessionId, input } = data;
@@ -135,9 +249,6 @@ export function setupTerminalSockets(io: SocketIOServer) {
       }
     });
 
-    /**
-     * ✅ NOUVEAU: Fermer une session de terminal
-     */
     socket.on('close-terminal', async (data: any, callback: any) => {
       try {
         const { sessionId } = data;
@@ -159,9 +270,6 @@ export function setupTerminalSockets(io: SocketIOServer) {
       }
     });
 
-    /**
-     * ✅ NOUVEAU: Obtenir les stats des sessions
-     */
     socket.on('terminal-stats', (callback: any) => {
       try {
         const stats = TerminalSessionManager.getStats();
@@ -174,11 +282,10 @@ export function setupTerminalSockets(io: SocketIOServer) {
     });
 
     /**
-     * ✅ NOUVEAU: Déconnexion du socket
+     * ✅ DISCONNECT
      */
     socket.on('disconnect', () => {
       console.log(`[Socket] 👋 DISCONNECT: ${socket.id}`);
-      // ✅ NOUVEAU: Les sessions restent ouvertes (utiliser le timeout)
     });
   });
 

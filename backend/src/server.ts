@@ -43,22 +43,35 @@ const HOST = process.env.HOST || '0.0.0.0';
 // Configuration de Socket.IO
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: (origin, callback) => {
-      const allowedOrigins = ['http://localhost:5173', 'http://192.168.136.149:5173'];
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      const allowedOrigins = [
+        'http://localhost:5173',
+        'http://localhost:3000', 
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:3000',
+        'http://192.168.136.149:5173',
+        'http://192.168.136.149:3000',
+        'http://172.18.0.1:5173',
+        'http://172.18.0.1:3000',
+      ];
+      
+      // Accepter aussi si pas d'origin (serveur interne)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
+        console.warn(`[CORS] Origin non autorisée: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
     methods: ['GET', 'POST'],
     credentials: true
-  },
+  } as any,
   pingInterval: parseInt(process.env.WS_PING_INTERVAL || '30000'),
-  pingTimeout: parseInt(process.env.WS_PING_TIMEOUT || '5000')
+  pingTimeout: parseInt(process.env.WS_PING_TIMEOUT || '5000'),
+  transports: ['websocket', 'polling']
 });
 
-// ✅ NOUVEAU: Initialiser les sockets du terminal
+// ✅ NOUVEAU: Initialiser les sockets du terminal (FUSIONNE tous les handlers)
 setupTerminalSockets(io);
 
 // Middleware de sécurité
@@ -190,149 +203,24 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
-// Configuration de Socket.IO
-io.on('connection', (socket) => {
-  console.log(`✅ Nouveau client WebSocket connecté: ${socket.id}`);
-
-  // Authentification du socket
-  const token = socket.handshake.auth.token;
-  let userId: number | null = null;
-
-  if (token) {
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'votre-secret-super-secure-change-moi-en-prod') as any;
-      userId = decoded.id;
-      socket.data.userId = userId;
-      console.log(`✅ Socket authentifié pour l'utilisateur ${userId}`);
-    } catch (error) {
-      console.error('❌ Erreur d\'authentification socket:', error);
-    }
-  }
-
-  // Events Chat
-  socket.on('join_conversation', (conversationId: number) => {
-    socket.join(`conversation_${conversationId}`);
-    console.log(`Client ${socket.id} a rejoint la conversation ${conversationId}`);
-  });
-
-  socket.on('leave_conversation', (conversationId: number) => {
-    socket.leave(`conversation_${conversationId}`);
-    console.log(`Client ${socket.id} a quitté la conversation ${conversationId}`);
-  });
-
-  socket.on('new_message', (data: { conversationId: number; message: any }) => {
-    io.to(`conversation_${data.conversationId}`).emit('message_received', data.message);
-  });
-
-  socket.on('typing', (data: { conversationId: number; username: string }) => {
-    socket.to(`conversation_${data.conversationId}`).emit('user_typing', data);
-  });
-
-  socket.on('stop_typing', (data: { conversationId: number }) => {
-    socket.to(`conversation_${data.conversationId}`).emit('user_stop_typing', data);
-  });
-
-  // Events SSH
-  socket.on('ssh_command', async (data: { serverId: string; command: string }) => {
-    if (!userId) {
-      socket.emit('ssh_error', {
-        serverId: data.serverId,
-        error: 'Non authentifié'
-      });
-      return;
-    }
-
-    try {
-      const serverId = parseInt(data.serverId);
-      console.log(`🔧 Exécution commande SSH sur serveur ${serverId}: ${data.command}`);
-      
-      const result = await SSHService.executeCommand(serverId, data.command, userId);
-      
-      socket.emit('ssh_output', {
-        serverId: data.serverId,
-        output: result.output
-      });
-
-      // Notifier si erreur
-      if (result.exitCode !== 0) {
-        socket.emit('ssh_error', {
-          serverId: data.serverId,
-          error: result.error || 'Commande échouée'
-        });
-      }
-    } catch (error: any) {
-      console.error('❌ Erreur SSH:', error);
-      socket.emit('ssh_error', {
-        serverId: data.serverId,
-        error: error.message
-      });
-    }
-  });
-
-  socket.on('ssh_connect', async (data: { serverId: string }) => {
-    if (!userId) {
-      socket.emit('ssh_error', {
-        serverId: data.serverId,
-        error: 'Non authentifié'
-      });
-      return;
-    }
-
-    try {
-      const serverId = parseInt(data.serverId);
-      console.log(`🔌 Connexion SSH au serveur ${serverId}`);
-      
-      const result = await SSHService.connect(serverId);
-      
-      if (result.success) {
-        socket.emit('ssh_connected', {
-          serverId: data.serverId
-        });
-      } else {
-        socket.emit('ssh_error', {
-          serverId: data.serverId,
-          error: result.message
-        });
-      }
-    } catch (error: any) {
-      console.error('❌ Erreur connexion SSH:', error);
-      socket.emit('ssh_error', {
-        serverId: data.serverId,
-        error: error.message
-      });
-    }
-  });
-
-  socket.on('ssh_disconnect', async (data: { serverId: string }) => {
-    try {
-      const serverId = parseInt(data.serverId);
-      console.log(`🔌 Déconnexion SSH du serveur ${serverId}`);
-      
-      await SSHService.disconnect(serverId);
-      
-      socket.emit('ssh_disconnected', {
-        serverId: data.serverId
-      });
-    } catch (error: any) {
-      console.error('❌ Erreur déconnexion SSH:', error);
-    }
-  });
-
-  socket.on('disconnect', () => {
-    console.log(`❌ Client WebSocket déconnecté: ${socket.id}`);
-  });
-});
-
 // Démarrage du serveur
 const startServer = async () => {
   try {
     // Connexion à Redis
-    await connectRedis();
-    console.log('✅ Redis connecté');
+    try {
+      await connectRedis();
+      console.log('✅ Redis connecté');
+    } catch (error) {
+      console.warn('⚠️ Redis non disponible');
+    }
 
     // Test PostgreSQL
-    await pool.query('SELECT NOW()');
-    console.log('✅ PostgreSQL connecté');
+    try {
+      await pool.query('SELECT NOW()');
+      console.log('✅ PostgreSQL connecté');
+    } catch (error) {
+      console.warn('⚠️ PostgreSQL non disponible - API limitée');
+    }
 
     // Démarrage du serveur
     httpServer.listen(PORT, HOST, () => {

@@ -33,11 +33,18 @@ redisClient.on('ready', () => {
 // Connexion à Redis
 export const connectRedis = async () => {
   try {
-    await redisClient.connect();
+    // ✅ CORRIGÉ: Timeout après 3 secondes pour ne pas bloquer le serveur
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Redis timeout')), 3000)
+    );
+    
+    await Promise.race([redisClient.connect(), timeoutPromise]);
+    console.log('✅ Redis connecté');
     return redisClient;
   } catch (error) {
-    console.error('Erreur de connexion à Redis:', error);
-    throw error;
+    console.warn('⚠️ Redis non disponible (mode offline)');
+    // Continuer sans Redis - c'est OK pour le développement
+    return null;
   }
 };
 

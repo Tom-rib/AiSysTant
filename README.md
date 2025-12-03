@@ -250,8 +250,8 @@ Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus
 
 ## 👨‍💻 Auteur
 
-**Votre Nom**
-- GitHub: [@votre-nom](https://github.com/Tom-rib)
+**Tom Ribero**
+- GitHub: [@Tom-rib](https://github.com/Tom-rib)
 - LinkedIn: [Votre Profil](https://www.linkedin.com/in/tom-ribero-462ba2339)
 - Email: tom.ribero@laplateforme.io
 
@@ -281,3 +281,19 @@ Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus
 Made with ❤️ and 🤖 AI
 
 </div>
+
+## Licence et droits d'utilisation
+
+Copyright (c) 2025 Tom Ribero
+
+Tous droits réservés.
+
+Ce logiciel et son code source sont la propriété exclusive de l’auteur.  
+Aucune partie de ce projet ne peut être utilisée, copiée, modifiée, distribuée,
+hébergée, intégrée ou revendue sans une autorisation écrite explicite de
+l’auteur.
+
+Pour toute utilisation professionnelle ou commerciale, une licence payante est
+nécessaire.  
+Merci de contacter : tom.ribero@laplateforme.io pour obtenir une licence
+commerciale ou un devis d’intégration.
