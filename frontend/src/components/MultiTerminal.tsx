@@ -168,10 +168,11 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
               key={tab.sessionId}
               className={`terminal-panel ${tab.isActive ? 'active' : ''}`}
             >
-              {/* ✅ NOUVEAU: Passer le socket à l'émulateur */}
+              {/* ✅ CORRIGÉ: Passer aussi le serverName */}
               <TerminalEmulator
                 sessionId={tab.sessionId}
                 serverId={tab.serverId}
+                serverName={tab.serverName}
                 socket={socketRef.current!}
               />
             </div>

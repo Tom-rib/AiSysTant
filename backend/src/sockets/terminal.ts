@@ -37,11 +37,11 @@ export function setupTerminalSockets(io: SocketIOServer) {
           serverName
         );
 
-        // ✅ NOUVEAU: Si succès, écouter les données du stream
+        // ✅ CORRIGÉ: Si succès, écouter les données du stream
         if (result.success) {
           const session = TerminalSessionManager.getSession(sessionId);
           if (session) {
-            // ✅ NOUVEAU: Envoyer les données UNIQUEMENT à ce client
+            // ✅ CORRIGÉ: Envoyer sur le channel GLOBAL 'terminal-output'
             session.stream.on('data', (data: Buffer) => {
               socket.emit('terminal-output', {
                 sessionId,
