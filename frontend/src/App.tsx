@@ -20,6 +20,8 @@ import Chat from './pages/Chat'
 import SSH from './pages/SSH'
 import SSHHelp from './pages/SSHHelp'
 import Settings from './pages/Settings'
+import { AccountSettings } from './pages/AccountSettings'
+import { SecuritySettings } from './pages/SecuritySettings'
 
 // Components
 import PrivateRoute from './components/PrivateRoute'
@@ -96,6 +98,22 @@ function App() {
               element={
                 <PrivateRoute>
                   <Settings />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/account/settings"
+              element={
+                <PrivateRoute>
+                  <AccountSettings />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/account/security"
+              element={
+                <PrivateRoute>
+                  <SecuritySettings />
                 </PrivateRoute>
               }
             />

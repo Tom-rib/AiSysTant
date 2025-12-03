@@ -4,26 +4,18 @@ import {
   MessageSquare, 
   Terminal, 
   LayoutDashboard, 
-  LogOut, 
-  User,
   Menu,
   X,
   Settings
 } from 'lucide-react'
 import { useState } from 'react'
 import logo from '../../public/logo-192.png'
+import { ProfileDropdown } from './ProfileDropdown'
 
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const location = useLocation()
-  const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
 
   const navLinks = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -87,34 +79,9 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* Desktop user menu */}
-            <div className="hidden md:block relative">
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-                <span className="font-medium text-text">{user?.username}</span>
-              </button>
-
-              {/* Dropdown */}
-              {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 animate-fade-in">
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <p className="text-sm font-medium text-text">{user?.username}</p>
-                    <p className="text-xs text-text-light">{user?.email}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center space-x-2 px-4 py-2 text-left text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Déconnexion</span>
-                  </button>
-                </div>
-              )}
+            {/* Desktop user menu - Profile Dropdown */}
+            <div className="hidden md:block">
+              <ProfileDropdown />
             </div>
           </div>
         </div>
