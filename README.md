@@ -250,7 +250,7 @@ Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus
 
 ## 👨‍💻 Auteur
 
-**Votre Nom**
+**Tom Ribero**
 - GitHub: [@Tom-rib](https://github.com/Tom-rib)
 - LinkedIn: [Votre Profil](https://www.linkedin.com/in/tom-ribero-462ba2339)
 - Email: tom.ribero@laplateforme.io
