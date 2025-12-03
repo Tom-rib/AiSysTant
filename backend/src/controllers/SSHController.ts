@@ -318,6 +318,7 @@ export class SSHController {
 
       return res.json({
         success: result.exitCode === 0,
+        message: result.exitCode === 0 ? 'Commande exécutée avec succès' : (result.error || 'Erreur lors de l\'exécution'),
         data: result
       });
 
