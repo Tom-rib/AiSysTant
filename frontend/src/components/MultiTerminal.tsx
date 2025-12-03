@@ -34,6 +34,10 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
     const userId = localStorage.getItem('userId');
 
     console.log('[MultiTerminal] Création Socket.io avec auth:', { token: !!token, userId });
+    console.log('[MultiTerminal] localStorage contents:', { 
+      token: token ? token.substring(0, 20) + '...' : null, 
+      userId 
+    });
 
     // ✅ CORRIGÉ: UN SEUL socket pour tous les onglets!
     socketRef.current = io(window.location.origin, {
@@ -44,8 +48,14 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
       reconnectionAttempts: 5,
     });
 
+    console.log('[MultiTerminal] Socket créé (mais pas encore connecté)');
+
     socketRef.current.on('connect', () => {
-      console.log('[MultiTerminal] Socket connecté:', socketRef.current?.id);
+      console.log('[MultiTerminal] ✅ Socket CONNECTÉ:', socketRef.current?.id);
+    });
+
+    socketRef.current.on('connect_error', (error: any) => {
+      console.error('[MultiTerminal] ❌ Socket CONNECT ERROR:', error);
     });
 
     socketRef.current.on('disconnect', () => {
