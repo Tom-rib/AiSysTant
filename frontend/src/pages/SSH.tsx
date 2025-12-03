@@ -1,27 +1,28 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Server, ArrowLeft } from 'lucide-react'
-import MultiTerminal from '../components/MultiTerminal'
+import { Plus, Server, ArrowLeft, Trash2, Terminal } from 'lucide-react'
 import { sshAPI } from '../services/api'
 
-// ✅ NOUVEAU: Interface pour les serveurs SSH
 interface SSHServer {
   id: number
   name: string
   host: string
   port: number
   username: string
+  connected?: boolean
 }
 
 export default function SSH() {
   const navigate = useNavigate()
   
-  // ✅ NOUVEAU: State des serveurs
   const [servers, setServers] = useState<SSHServer[]>([])
   const [loading, setLoading] = useState(true)
   const [isAddingServer, setIsAddingServer] = useState(false)
+  const [selectedServerId, setSelectedServerId] = useState<number | null>(null)
+  const [terminalOutput, setTerminalOutput] = useState<string[]>([])
+  const [command, setCommand] = useState('')
+  const [isExecuting, setIsExecuting] = useState(false)
   
-  // ✅ NOUVEAU: Formulaire nouveau serveur
   const [newServer, setNewServer] = useState({
     name: '',
     host: '',
@@ -31,20 +32,16 @@ export default function SSH() {
     privateKey: '',
   })
 
-  // ✅ NOUVEAU: Charger les serveurs au montage
   useEffect(() => {
     loadServers()
   }, [])
 
-  /**
-   * ✅ NOUVEAU: Charger les serveurs depuis l'API
-   */
   const loadServers = async () => {
     try {
       setLoading(true)
       const response = await sshAPI.getServers()
       const data = response.data.data || response.data.servers || response.data || []
-      setServers(data)
+      setServers(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Erreur chargement serveurs:', error)
       setServers([])
@@ -53,13 +50,15 @@ export default function SSH() {
     }
   }
 
-  /**
-   * ✅ NOUVEAU: Ajouter un nouveau serveur
-   */
   const handleAddServer = async () => {
     try {
       if (!newServer.name || !newServer.host || !newServer.username) {
         alert('Remplissez tous les champs requis')
+        return
+      }
+
+      if (!newServer.password && !newServer.privateKey) {
+        alert('Remplissez mot de passe ou clé privée')
         return
       }
 
@@ -72,7 +71,6 @@ export default function SSH() {
         private_key: newServer.privateKey || undefined,
       })
 
-      // Réinitialiser le formulaire
       setNewServer({
         name: '',
         host: '',
@@ -82,8 +80,6 @@ export default function SSH() {
         privateKey: '',
       })
       setIsAddingServer(false)
-
-      // Recharger les serveurs
       await loadServers()
     } catch (error: any) {
       console.error('Erreur ajout serveur:', error)
@@ -91,18 +87,46 @@ export default function SSH() {
     }
   }
 
-  /**
-   * ✅ NOUVEAU: Supprimer un serveur
-   */
   const handleDeleteServer = async (serverId: number) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce serveur?')) return
+    if (!window.confirm('Êtes-vous sûr?')) return
 
     try {
       await sshAPI.deleteServer(serverId)
       await loadServers()
+      if (selectedServerId === serverId) {
+        setSelectedServerId(null)
+        setTerminalOutput([])
+      }
     } catch (error: any) {
       console.error('Erreur suppression serveur:', error)
       alert('Erreur lors de la suppression')
+    }
+  }
+
+  const executeCommand = async () => {
+    if (!command.trim() || !selectedServerId || isExecuting) return
+
+    setIsExecuting(true)
+    try {
+      setTerminalOutput(prev => [...prev, `$ ${command}`])
+      
+      const response = await sshAPI.executeCommand(selectedServerId, command)
+      
+      if (response.data.success) {
+        const output = response.data.data?.output || response.data.data?.stdout || ''
+        if (output) {
+          setTerminalOutput(prev => [...prev, output])
+        }
+      } else {
+        setTerminalOutput(prev => [...prev, `Erreur: ${response.data.message}`])
+      }
+      
+      setCommand('')
+    } catch (error: any) {
+      console.error('Erreur exécution:', error)
+      setTerminalOutput(prev => [...prev, `Erreur: ${error.message}`])
+    } finally {
+      setIsExecuting(false)
     }
   }
 
@@ -119,9 +143,9 @@ export default function SSH() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* En-tête */}
+      {/* Header */}
       <div className="bg-white border-b border-gray-200 p-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
@@ -130,7 +154,7 @@ export default function SSH() {
               >
                 <ArrowLeft className="w-5 h-5 text-text" />
               </button>
-              <h1 className="text-3xl font-bold text-text">Terminaux SSH</h1>
+              <h1 className="text-3xl font-bold text-text">SSH Terminal</h1>
             </div>
             <button
               onClick={() => setIsAddingServer(!isAddingServer)}
@@ -143,12 +167,12 @@ export default function SSH() {
         </div>
       </div>
 
-      {/* Formulaire ajout serveur */}
+      {/* Add Server Form */}
       {isAddingServer && (
         <div className="bg-white border-b border-gray-200 p-6">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <h2 className="text-xl font-semibold text-text mb-4">Nouveau serveur SSH</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 mb-4">
               <input
                 type="text"
                 placeholder="Nom du serveur"
@@ -192,17 +216,11 @@ export default function SSH() {
                 className="input"
               />
             </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                onClick={handleAddServer}
-                className="btn-primary"
-              >
+            <div className="flex gap-2">
+              <button onClick={handleAddServer} className="btn-primary">
                 Ajouter
               </button>
-              <button
-                onClick={() => setIsAddingServer(false)}
-                className="btn-secondary"
-              >
+              <button onClick={() => setIsAddingServer(false)} className="btn-secondary">
                 Annuler
               </button>
             </div>
@@ -210,52 +228,110 @@ export default function SSH() {
         </div>
       )}
 
-      {/* Contenu principal */}
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
-        {servers.length === 0 ? (
-          <div className="text-center py-12">
-            <Server className="w-16 h-16 text-text-light mx-auto mb-4" />
-            <p className="text-text-light text-lg mb-2">Aucun serveur configuré</p>
-            <p className="text-text-lighter">Ajoutez un serveur pour commencer</p>
-          </div>
-        ) : (
-          <>
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold text-text mb-3">Serveurs disponibles</h2>
-              <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-6">
+          {/* Servers List */}
+          <div className="col-span-1">
+            <h2 className="text-lg font-semibold text-text mb-3">Serveurs</h2>
+            {servers.length === 0 ? (
+              <div className="p-4 bg-gray-50 rounded-lg text-center text-text-light">
+                <Server className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Aucun serveur</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
                 {servers.map(server => (
                   <div
                     key={server.id}
-                    className="p-3 bg-white rounded-lg border border-gray-200 hover:border-primary transition"
+                    className={`p-3 rounded-lg border cursor-pointer transition ${
+                      selectedServerId === server.id
+                        ? 'border-primary bg-primary/5'
+                        : 'border-gray-200 hover:border-primary'
+                    }`}
+                    onClick={() => setSelectedServerId(server.id)}
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-text truncate">{server.name}</p>
-                        <p className="text-sm text-text-light">{server.username}@{server.host}:{server.port}</p>
+                        <p className="font-medium text-text">{server.name}</p>
+                        <p className="text-xs text-text-light">
+                          {server.username}@{server.host}:{server.port}
+                        </p>
                       </div>
                       <button
-                        onClick={() => handleDeleteServer(server.id)}
-                        className="text-red-600 hover:text-red-800"
-                        title="Supprimer"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteServer(server.id)
+                        }}
+                        className="text-red-600 hover:text-red-800 p-1"
                       >
-                        ×
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* ✅ NOUVEAU: Utiliser le composant MultiTerminal */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h2 className="text-lg font-semibold text-text mb-3">Terminaux</h2>
-              <div style={{ height: '600px', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
-                <MultiTerminal servers={servers} />
+          {/* Terminal */}
+          <div className="col-span-2">
+            {selectedServerId ? (
+              <div className="bg-gray-900 rounded-lg overflow-hidden flex flex-col h-full" style={{ minHeight: '500px' }}>
+                {/* Terminal Header */}
+                <div className="bg-gray-800 border-b border-gray-700 p-3 flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-green-400" />
+                  <span className="text-green-400 text-sm font-mono">
+                    {servers.find(s => s.id === selectedServerId)?.name}
+                  </span>
+                </div>
+
+                {/* Terminal Output */}
+                <div className="flex-1 overflow-y-auto p-4 font-mono text-sm text-green-400 space-y-1">
+                  {terminalOutput.length === 0 ? (
+                    <div className="text-gray-500">Terminal prêt...</div>
+                  ) : (
+                    terminalOutput.map((line, i) => (
+                      <div key={i} className="whitespace-pre-wrap break-words">
+                        {line}
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Terminal Input */}
+                <div className="bg-gray-800 border-t border-gray-700 p-3">
+                  <div className="flex gap-2">
+                    <span className="text-green-400 text-sm font-mono">$ </span>
+                    <input
+                      type="text"
+                      value={command}
+                      onChange={(e) => setCommand(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          executeCommand()
+                        }
+                      }}
+                      placeholder="Entrez une commande..."
+                      disabled={isExecuting}
+                      className="flex-1 bg-transparent outline-none text-green-400 text-sm placeholder-gray-500"
+                      autoFocus
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            ) : (
+              <div className="bg-gray-50 rounded-lg p-8 text-center flex items-center justify-center" style={{ minHeight: '500px' }}>
+                <div>
+                  <Terminal className="w-12 h-12 mx-auto mb-3 text-text-light opacity-50" />
+                  <p className="text-text-light">Sélectionnez un serveur pour commencer</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
 }
+
