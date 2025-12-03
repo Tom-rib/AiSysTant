@@ -322,6 +322,7 @@ export default function Chat() {
                 <ChatIAGuide />
               </div>
             )}
+          </div>
 
         <div className="flex-1 flex flex-col">
           {currentConversationId ? (
