@@ -3,6 +3,9 @@ import { useAuth } from './context/AuthContext'
 import { SSHProvider } from './context/SSHContext'
 import { ChatProvider } from './context/ChatContext'
 
+// ✅ NOUVEAU: Importer les styles du terminal SSH
+import './styles/ssh-terminal.css'
+
 // Pages
 import Login from './pages/Login'
 import Register from './pages/Register'

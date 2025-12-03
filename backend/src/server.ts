@@ -16,6 +16,8 @@ import chatRoutes from './routes/chat';
 import sshRoutes from './routes/ssh';
 import statsRoutes from './routes/stats';
 import settingsRoutes from './routes/settings';
+// ✅ NOUVEAU: Importer les routes du terminal SSH
+import sshTerminalRoutes from './routes/ssh-terminal';
 
 // Import des configurations
 import pool from './config/database';
@@ -154,6 +156,8 @@ app.get('/api/health', async (req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/ssh', sshRoutes);
+// ✅ NOUVEAU: Routes du terminal SSH interactif
+app.use('/api/ssh-terminal', sshTerminalRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/settings', settingsRoutes);
 
