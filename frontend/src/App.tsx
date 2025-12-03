@@ -11,6 +11,7 @@ import './styles/ssh-shell.css'
 import './styles/multi-terminal.css'
 
 // Pages
+import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -34,6 +35,10 @@ function App() {
           
           <Routes>
             {/* Public routes */}
+            <Route 
+              path="/" 
+              element={<Landing />} 
+            />
             <Route 
               path="/login" 
               element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} 
@@ -83,12 +88,6 @@ function App() {
                   <Settings />
                 </PrivateRoute>
               }
-            />
-
-            {/* Redirect root to dashboard if authenticated, otherwise to login */}
-            <Route 
-              path="/" 
-              element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} />} 
             />
 
             {/* 404 - Not found */}
