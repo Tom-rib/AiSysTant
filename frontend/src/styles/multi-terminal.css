@@ -147,6 +147,10 @@
   display: block;
 }
 
+.dropdown-content[style*="display: block"] {
+  display: block !important;
+}
+
 .dropdown-item {
   display: block;
   width: 100%;

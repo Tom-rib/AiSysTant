@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Plus, X } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import TerminalEmulator from './TerminalEmulator';
+import '../styles/multi-terminal.css';
 
 // ✅ NOUVEAU: Interface pour un onglet de terminal
 interface TerminalTab {
@@ -19,6 +20,7 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
   // ✅ NOUVEAU: State des onglets
   const [tabs, setTabs] = useState<TerminalTab[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   // ✅ CORRIGÉ: Initialiser le socket UNE SEULE FOIS (avec useCallback pour l'authentification)
@@ -185,17 +187,23 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
         {/* ✅ NOUVEAU: Bouton pour ajouter un onglet */}
         <div className="tabs-actions">
           <div className="dropdown-menu">
-            <button className="btn-add-terminal">
+            <button 
+              className="btn-add-terminal"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
               <Plus className="w-5 h-5" />
               <span>Nouveau</span>
             </button>
 
-            <div className="dropdown-content">
+            <div className="dropdown-content" style={{ display: isDropdownOpen ? 'block' : 'none' }}>
               {servers.map(server => (
                 <button
                   key={server.id}
                   className="dropdown-item"
-                  onClick={() => addTerminal(server.id, server.name)}
+                  onClick={() => {
+                    addTerminal(server.id, server.name);
+                    setIsDropdownOpen(false);
+                  }}
                 >
                   {server.name}
                 </button>
