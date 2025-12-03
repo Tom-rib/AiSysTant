@@ -1,631 +1,261 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-  Plus, 
-  Server, 
-  Trash2, 
-  Terminal as TerminalIcon,
-  Send,
-  X,
-  AlertCircle,
-  CheckCircle2,
-  Loader,
-  RotateCcw,
-  HelpCircle,
-  LogOut
-} from 'lucide-react'
+import { Plus, Server, ArrowLeft } from 'lucide-react'
+import MultiTerminal from '../components/MultiTerminal'
 import { sshAPI } from '../services/api'
-import { socketService } from '../services/socket'
-import { useSSH } from '../context/SSHContext'
 
+// ✅ NOUVEAU: Interface pour les serveurs SSH
 interface SSHServer {
   id: number
   name: string
   host: string
   port: number
   username: string
-  connected?: boolean
-  status?: 'connected' | 'disconnected' | 'connecting'
 }
 
 export default function SSH() {
   const navigate = useNavigate()
+  
+  // ✅ NOUVEAU: State des serveurs
   const [servers, setServers] = useState<SSHServer[]>([])
+  const [loading, setLoading] = useState(true)
   const [isAddingServer, setIsAddingServer] = useState(false)
-  const [command, setCommand] = useState('')
-  const [isExecuting, setIsExecuting] = useState(false)
-  const [selectedServers, setSelectedServers] = useState<number[]>([])
-  const terminalEndRef = useRef<HTMLDivElement>(null)
-
-  // Utiliser le contexte SSH au lieu du state local
-  const { 
-    selectedServer,
-    setSelectedServerId,
-    addTerminalLine,
-    clearTerminal,
-    getTerminalLines 
-  } = useSSH()
-
-  const terminalLines = selectedServer ? getTerminalLines(selectedServer) : []
-
-  // Formulaire nouveau serveur
+  
+  // ✅ NOUVEAU: Formulaire nouveau serveur
   const [newServer, setNewServer] = useState({
     name: '',
     host: '',
     port: 22,
     username: '',
     password: '',
+    privateKey: '',
   })
 
+  // ✅ NOUVEAU: Charger les serveurs au montage
   useEffect(() => {
     loadServers()
   }, [])
 
-  useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (!token) return
-
-    // Connecter le socket
-    socketService.connect(token)
-
-    // Nettoyer les anciens listeners avant d'en ajouter de nouveaux
-    socketService.offAll('ssh_output')
-    socketService.offAll('ssh_error')
-    socketService.offAll('ssh_connected')
-    socketService.offAll('ssh_disconnected')
-
-    // Enregistrer les listeners
-    const handleSSHOutput = (data: { serverId: string; output: string }) => {
-      const serverId = parseInt(data.serverId)
-      addTerminalLine(serverId, data.output, 'output')
-    }
-    
-    const handleSSHError = (data: { serverId: string; error: string }) => {
-      const serverId = parseInt(data.serverId)
-      addTerminalLine(serverId, data.error, 'error')
-    }
-    
-    const handleSSHConnected = (data: { serverId: string }) => {
-      const serverId = parseInt(data.serverId)
-      setServers(prev =>
-        prev.map(s => (s.id === serverId ? { ...s, status: 'connected' as const } : s))
-      )
-      addTerminalLine(serverId, `✓ Connecté au serveur ${data.serverId}`, 'output')
-    }
-    
-    const handleSSHDisconnected = (data: { serverId: string }) => {
-      const serverId = parseInt(data.serverId)
-      setServers(prev =>
-        prev.map(s => (s.id === serverId ? { ...s, status: 'disconnected' as const } : s))
-      )
-      addTerminalLine(serverId, `✗ Déconnecté du serveur ${data.serverId}`, 'error')
-    }
-
-    socketService.on('ssh_output', handleSSHOutput)
-    socketService.on('ssh_error', handleSSHError)
-    socketService.on('ssh_connected', handleSSHConnected)
-    socketService.on('ssh_disconnected', handleSSHDisconnected)
-
-    return () => {
-      socketService.off('ssh_output', handleSSHOutput)
-      socketService.off('ssh_error', handleSSHError)
-      socketService.off('ssh_connected', handleSSHConnected)
-      socketService.off('ssh_disconnected', handleSSHDisconnected)
-    }
-  }, [addTerminalLine])
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [terminalLines])
-
-  const scrollToBottom = () => {
-    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
-
+  /**
+   * ✅ NOUVEAU: Charger les serveurs depuis l'API
+   */
   const loadServers = async () => {
     try {
+      setLoading(true)
       const response = await sshAPI.getServers()
-      const serversData = response.data.data || response.data.servers || response.data || []
-      
-      const mappedServers = serversData.map((server: any) => ({
-        ...server,
-        status: server.connected ? 'connected' : 'disconnected'
-      }))
-      
-      setServers(mappedServers)
+      const data = response.data.data || response.data.servers || response.data || []
+      setServers(data)
     } catch (error) {
-      console.error('Erreur lors du chargement des serveurs:', error)
+      console.error('Erreur chargement serveurs:', error)
+      setServers([])
+    } finally {
+      setLoading(false)
     }
   }
 
-  const addServer = async () => {
+  /**
+   * ✅ NOUVEAU: Ajouter un nouveau serveur
+   */
+  const handleAddServer = async () => {
     try {
-      const response = await sshAPI.addServer(newServer)
-      const newServerData = response.data.data || response.data.server || response.data
-      
-      const serverWithStatus = {
-        ...newServerData,
-        status: 'disconnected' as const
+      if (!newServer.name || !newServer.host || !newServer.username) {
+        alert('Remplissez tous les champs requis')
+        return
       }
-      
-      setServers(prev => [...prev, serverWithStatus])
+
+      await sshAPI.addServer({
+        name: newServer.name,
+        host: newServer.host,
+        port: newServer.port,
+        username: newServer.username,
+        password: newServer.password || undefined,
+        private_key: newServer.privateKey || undefined,
+      })
+
+      // Réinitialiser le formulaire
+      setNewServer({
+        name: '',
+        host: '',
+        port: 22,
+        username: '',
+        password: '',
+        privateKey: '',
+      })
       setIsAddingServer(false)
-      setNewServer({ name: '', host: '', port: 22, username: '', password: '' })
+
+      // Recharger les serveurs
+      await loadServers()
     } catch (error: any) {
-      console.error('Erreur lors de l\'ajout du serveur:', error)
-      alert(`Erreur: ${error.response?.data?.message || error.message}`)
+      console.error('Erreur ajout serveur:', error)
+      alert(error.response?.data?.message || 'Erreur lors de l\'ajout du serveur')
     }
   }
 
-  const deleteServer = async (serverId: number) => {
-    if (!confirm('Voulez-vous vraiment supprimer ce serveur ?')) return
+  /**
+   * ✅ NOUVEAU: Supprimer un serveur
+   */
+  const handleDeleteServer = async (serverId: number) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce serveur?')) return
 
     try {
       await sshAPI.deleteServer(serverId)
-      setServers(prev => prev.filter(s => s.id !== serverId))
-      if (selectedServer === serverId) {
-        setSelectedServerId(null)
-        clearTerminal(serverId)
-      }
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error)
-    }
-  }
-
-  const connectToServer = async (serverId: number) => {
-    try {
-      updateServerStatus(serverId, 'connecting')
-      await sshAPI.connect(serverId)
-      setSelectedServerId(serverId)
-      addTerminalLine(serverId, `Connexion au serveur...`, 'output')
+      await loadServers()
     } catch (error: any) {
-      updateServerStatus(serverId, 'disconnected')
-      addTerminalLine(serverId, `Erreur de connexion: ${error.message}`, 'error')
+      console.error('Erreur suppression serveur:', error)
+      alert('Erreur lors de la suppression')
     }
   }
 
-  const executeCommand = async () => {
-    if (!command.trim() || !selectedServer || isExecuting) return
-
-    addTerminalLine(selectedServer, command, 'command')
-    setIsExecuting(true)
-
-    try {
-      socketService.executeSSHCommand(selectedServer.toString(), command)
-      setCommand('')
-    } catch (error) {
-      console.error('Erreur lors de l\'exécution:', error)
-      addTerminalLine(selectedServer, 'Erreur lors de l\'exécution de la commande', 'error')
-    } finally {
-      setIsExecuting(false)
-    }
-  }
-
-  const updateServerStatus = (serverId: number, status: NonNullable<SSHServer['status']>) => {
-    setServers(prev =>
-      prev.map(s => (s.id === serverId ? { ...s, status } : s))
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-text-light">Chargement...</p>
+        </div>
+      </div>
     )
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      executeCommand()
-    }
-  }
-
-  const handleClearTerminal = () => {
-    if (selectedServer) {
-      clearTerminal(selectedServer)
-    }
-  }
-
-  const disconnectServer = async (serverId: number) => {
-    try {
-      await sshAPI.disconnect(serverId)
-      updateServerStatus(serverId, 'disconnected')
-      addTerminalLine(serverId, '✗ Déconnecté', 'error')
-      setSelectedServerId(null)
-    } catch (error: any) {
-      console.error('Erreur lors de la déconnexion:', error)
-      addTerminalLine(serverId, `Erreur de déconnexion: ${error.message}`, 'error')
-    }
-  }
-
-  const selectedServerData = servers.find(s => s.id === selectedServer)
-
   return (
     <div className="min-h-screen bg-background">
-      <div className="h-[calc(100vh-4rem)] flex">
-        {/* Sidebar - Liste des serveurs */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200 space-y-2">
+      {/* En-tête */}
+      <div className="bg-white border-b border-gray-200 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate(-1)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <ArrowLeft className="w-5 h-5 text-text" />
+              </button>
+              <h1 className="text-3xl font-bold text-text">Terminaux SSH</h1>
+            </div>
             <button
-              onClick={() => setIsAddingServer(true)}
-              className="w-full btn-primary flex items-center justify-center space-x-2"
+              onClick={() => setIsAddingServer(!isAddingServer)}
+              className="btn-primary flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              <span>Ajouter un serveur</span>
-            </button>
-            <button
-              onClick={() => navigate('/ssh/help')}
-              className="w-full btn-outline flex items-center justify-center space-x-2"
-            >
-              <HelpCircle className="w-5 h-5" />
-              <span>Guide SSH</span>
+              Ajouter un serveur
             </button>
           </div>
-
-          <div className="flex-1 overflow-y-auto scrollbar-thin">
-            {servers.length === 0 ? (
-              <div className="p-8 text-center space-y-6">
-                <div>
-                  <Server className="w-12 h-12 text-text-light mx-auto mb-4" />
-                  <p className="text-text-light">Aucun serveur</p>
-                  <p className="text-sm text-text-lighter mt-2">
-                    Ajoutez votre premier serveur SSH
-                  </p>
-                </div>
-                
-                <div className="text-left bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <p className="text-xs font-semibold text-text mb-3">📖 Exemple de connexion SSH:</p>
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <p className="text-text-light font-medium">1. Ouvrir le port SSH (si nécessaire):</p>
-                      <div className="space-y-1 mt-1">
-                        <div>
-                          <p className="text-text-lighter text-xs">📌 Linux - UFW (Ubuntu/Debian):</p>
-                          <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-0.5 overflow-x-auto">
-                            sudo ufw allow 22/tcp
-                          </code>
-                        </div>
-                        <div>
-                          <p className="text-text-lighter text-xs">📌 Linux - iptables (Autres):</p>
-                          <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-0.5 overflow-x-auto">
-                            sudo iptables -A INPUT -p tcp --dport 22 -j ACCEPT
-                          </code>
-                        </div>
-                        <div>
-                          <p className="text-text-lighter text-xs">📌 Windows - PowerShell (Admin):</p>
-                          <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-0.5 overflow-x-auto">
-                            netsh advfirewall firewall add rule name="SSH" dir=in action=allow protocol=tcp localport=22
-                          </code>
-                        </div>
-                        <div>
-                          <p className="text-text-lighter text-xs">📌 macOS - Firewall (System Preferences):</p>
-                          <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-0.5 overflow-x-auto">
-                            sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate off
-                          </code>
-                          <p className="text-text-lighter text-xs mt-1">Ou activer SSH: System Settings → General → Sharing → Remote Login</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-text-light font-medium">2. Commande SSH standard:</p>
-                      <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-1 overflow-x-auto">
-                        ssh username@192.168.1.100
-                      </code>
-                    </div>
-                    <div>
-                      <p className="text-text-light font-medium">3. Avec port personnalisé:</p>
-                      <code className="block bg-gray-800 text-green-400 p-2 rounded font-mono text-xs mt-1 overflow-x-auto">
-                        ssh -p 2222 username@192.168.1.100
-                      </code>
-                    </div>
-                    <div>
-                      <p className="text-text-light font-medium">4. Remplissez le formulaire avec:</p>
-                      <ul className="list-disc list-inside text-text-light mt-1 space-y-1">
-                        <li><span className="font-medium">Nom:</span> Surnom du serveur</li>
-                        <li><span className="font-medium">Host:</span> 192.168.1.100</li>
-                        <li><span className="font-medium">Port:</span> 22 (ou autre)</li>
-                        <li><span className="font-medium">Username:</span> votre login</li>
-                        <li><span className="font-medium">Password:</span> votre mot de passe</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-2 space-y-2">
-                {servers.map((server) => (
-                  <div
-                    key={server.id}
-                    className={`group p-4 rounded-lg cursor-pointer transition-all ${
-                      selectedServer === server.id
-                        ? 'bg-primary-50 border-2 border-primary'
-                        : 'hover:bg-gray-50 border-2 border-transparent'
-                    }`}
-                    onClick={() => {
-                      if (server.status === 'disconnected' || !server.status) {
-                        connectToServer(server.id)
-                      } else {
-                        setSelectedServerId(server.id)
-                      }
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-text truncate">
-                          {server.name}
-                        </p>
-                        <p className="text-xs text-text-light truncate">
-                          {server.username}@{server.host}:{server.port}
-                        </p>
-                      </div>
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            deleteServer(server.id)
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      {server.status === 'connected' && (
-                        <>
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <span className="text-xs text-green-600 font-medium">Connecté</span>
-                        </>
-                      )}
-                      {server.status === 'connecting' && (
-                        <>
-                          <Loader className="w-3 h-3 text-yellow-600 animate-spin" />
-                          <span className="text-xs text-yellow-600 font-medium">Connexion...</span>
-                        </>
-                      )}
-                      {(!server.status || server.status === 'disconnected') && (
-                        <>
-                          <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                          <span className="text-xs text-gray-600 font-medium">Déconnecté</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Terminal */}
-        <div className="flex-1 flex flex-col">
-          {selectedServer ? (
-            <>
-              <div className="bg-gray-800 border-b border-gray-700 flex items-center overflow-x-auto">
-                {/* Onglets des serveurs connectés */}
-                {servers.filter(s => s.status === 'connected').map((server) => (
-                  <button
-                    key={server.id}
-                    onClick={() => setSelectedServerId(server.id)}
-                    className={`px-4 py-2 flex items-center space-x-2 border-b-2 transition-all whitespace-nowrap ${
-                      selectedServer === server.id
-                        ? 'border-green-400 bg-gray-700'
-                        : 'border-transparent hover:bg-gray-700'
-                    }`}
-                  >
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm text-gray-300">{server.name}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="bg-gray-800 p-4 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <TerminalIcon className="w-5 h-5 text-green-400" />
-                  <div>
-                    <p className="text-white font-medium">
-                      {selectedServerData?.name}
-                    </p>
-                    <p className="text-gray-400 text-sm">
-                      {selectedServerData?.username}@{selectedServerData?.host}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleClearTerminal}
-                    className="p-2 hover:bg-gray-700 rounded transition-colors"
-                    title="Effacer le terminal"
-                  >
-                    <RotateCcw className="w-4 h-4 text-gray-400" />
-                  </button>
-                  {selectedServerData?.status === 'connected' && (
-                    <button
-                      onClick={() => selectedServer && disconnectServer(selectedServer)}
-                      className="p-2 hover:bg-gray-700 rounded transition-colors"
-                      title="Déconnecter"
-                    >
-                      <LogOut className="w-4 h-4 text-red-400" />
-                    </button>
-                  )}
-                  {selectedServerData?.status === 'connected' ? (
-                    <div className="flex items-center space-x-2 px-3 py-1 bg-green-900 rounded-lg">
-                      <CheckCircle2 className="w-4 h-4 text-green-400" />
-                      <span className="text-sm text-green-400">Connecté</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2 px-3 py-1 bg-yellow-900 rounded-lg">
-                      <AlertCircle className="w-4 h-4 text-yellow-400" />
-                      <span className="text-sm text-yellow-400">Connexion...</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex-1 terminal overflow-y-auto">
-                {terminalLines.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <TerminalIcon className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                      <p className="text-green-400">Terminal prêt</p>
-                      <p className="text-gray-400 text-sm mt-2">
-                        Tapez une commande pour commencer
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {terminalLines.map((line) => (
-                      <div key={line.id} className="terminal-line">
-                        {line.type === 'command' && (
-                          <span className="text-blue-400">$ {line.content}</span>
-                        )}
-                        {line.type === 'output' && (
-                          <span className="text-green-400">{line.content}</span>
-                        )}
-                        {line.type === 'error' && (
-                          <span className="text-red-400">{line.content}</span>
-                        )}
-                      </div>
-                    ))}
-                    <div ref={terminalEndRef} />
-                  </>
-                )}
-              </div>
-
-              <div className="bg-gray-900 p-4 border-t border-gray-700">
-                <div className="flex items-center space-x-3">
-                  <span className="text-green-400 font-mono">$</span>
-                  <input
-                    type="text"
-                    value={command}
-                    onChange={(e) => setCommand(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Tapez une commande SSH..."
-                    className="flex-1 bg-transparent text-green-400 font-mono outline-none placeholder-gray-600"
-                    disabled={isExecuting || selectedServerData?.status !== 'connected'}
-                  />
-                  <button
-                    onClick={executeCommand}
-                    disabled={!command.trim() || isExecuting || selectedServerData?.status !== 'connected'}
-                    className="p-2 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Send className="w-5 h-5 text-green-400" />
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <Server className="w-16 h-16 text-text-light mx-auto mb-4" />
-                <p className="text-xl text-text mb-2">Aucun serveur sélectionné</p>
-                <p className="text-text-light">
-                  Sélectionnez ou ajoutez un serveur pour commencer
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Modal d'ajout de serveur */}
+      {/* Formulaire ajout serveur */}
       {isAddingServer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 animate-fade-in">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-text">Ajouter un serveur SSH</h2>
+        <div className="bg-white border-b border-gray-200 p-6">
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-xl font-semibold text-text mb-4">Nouveau serveur SSH</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="Nom du serveur"
+                value={newServer.name}
+                onChange={(e) => setNewServer({ ...newServer, name: e.target.value })}
+                className="input"
+              />
+              <input
+                type="text"
+                placeholder="Adresse IP/Hostname"
+                value={newServer.host}
+                onChange={(e) => setNewServer({ ...newServer, host: e.target.value })}
+                className="input"
+              />
+              <input
+                type="number"
+                placeholder="Port (défaut: 22)"
+                value={newServer.port}
+                onChange={(e) => setNewServer({ ...newServer, port: parseInt(e.target.value) })}
+                className="input"
+              />
+              <input
+                type="text"
+                placeholder="Utilisateur SSH"
+                value={newServer.username}
+                onChange={(e) => setNewServer({ ...newServer, username: e.target.value })}
+                className="input"
+              />
+              <input
+                type="password"
+                placeholder="Mot de passe (optionnel)"
+                value={newServer.password}
+                onChange={(e) => setNewServer({ ...newServer, password: e.target.value })}
+                className="input"
+              />
+              <input
+                type="text"
+                placeholder="Clé privée (optionnel)"
+                value={newServer.privateKey}
+                onChange={(e) => setNewServer({ ...newServer, privateKey: e.target.value })}
+                className="input"
+              />
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={handleAddServer}
+                className="btn-primary"
+              >
+                Ajouter
+              </button>
               <button
                 onClick={() => setIsAddingServer(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="btn-secondary"
               >
-                <X className="w-5 h-5 text-text" />
+                Annuler
               </button>
             </div>
-
-            <form onSubmit={(e) => { e.preventDefault(); addServer(); }} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-text mb-2">
-                  Nom du serveur
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newServer.name}
-                  onChange={(e) => setNewServer({ ...newServer, name: e.target.value })}
-                  className="input"
-                  placeholder="Mon Serveur"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text mb-2">
-                  Adresse (Host)
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newServer.host}
-                  onChange={(e) => setNewServer({ ...newServer, host: e.target.value })}
-                  className="input"
-                  placeholder="192.168.1.100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text mb-2">
-                  Port
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={newServer.port}
-                  onChange={(e) => setNewServer({ ...newServer, port: parseInt(e.target.value) })}
-                  className="input"
-                  placeholder="22"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text mb-2">
-                  Nom d'utilisateur
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newServer.username}
-                  onChange={(e) => setNewServer({ ...newServer, username: e.target.value })}
-                  className="input"
-                  placeholder="root"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-text mb-2">
-                  Mot de passe
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={newServer.password}
-                  onChange={(e) => setNewServer({ ...newServer, password: e.target.value })}
-                  className="input"
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAddingServer(false)}
-                  className="flex-1 btn-outline"
-                >
-                  Annuler
-                </button>
-                <button type="submit" className="flex-1 btn-primary">
-                  Ajouter
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
+
+      {/* Contenu principal */}
+      <div className="max-w-7xl mx-auto p-6">
+        {servers.length === 0 ? (
+          <div className="text-center py-12">
+            <Server className="w-16 h-16 text-text-light mx-auto mb-4" />
+            <p className="text-text-light text-lg mb-2">Aucun serveur configuré</p>
+            <p className="text-text-lighter">Ajoutez un serveur pour commencer</p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-text mb-3">Serveurs disponibles</h2>
+              <div className="grid grid-cols-3 gap-3">
+                {servers.map(server => (
+                  <div
+                    key={server.id}
+                    className="p-3 bg-white rounded-lg border border-gray-200 hover:border-primary transition"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-text truncate">{server.name}</p>
+                        <p className="text-sm text-text-light">{server.username}@{server.host}:{server.port}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteServer(server.id)}
+                        className="text-red-600 hover:text-red-800"
+                        title="Supprimer"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ✅ NOUVEAU: Utiliser le composant MultiTerminal */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <h2 className="text-lg font-semibold text-text mb-3">Terminaux</h2>
+              <div style={{ height: '600px', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+                <MultiTerminal servers={servers} />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }
