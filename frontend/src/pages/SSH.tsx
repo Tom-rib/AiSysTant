@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Server, ArrowLeft, Trash2, Terminal, LogOut } from 'lucide-react'
+import { Plus, Server, ArrowLeft, Trash2, Terminal, LogOut, HelpCircle } from 'lucide-react'
 import { sshAPI } from '../services/api'
 
 interface SSHServer {
@@ -259,13 +259,23 @@ export default function SSH() {
               </button>
               <h1 className="text-3xl font-bold text-text">SSH Terminal</h1>
             </div>
-            <button
-              onClick={() => setIsAddingServer(!isAddingServer)}
-              className="btn-primary flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Ajouter un serveur
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/ssh-help')}
+                className="btn-secondary flex items-center gap-2"
+                title="Guide SSH"
+              >
+                <HelpCircle className="w-5 h-5" />
+                Guide
+              </button>
+              <button
+                onClick={() => setIsAddingServer(!isAddingServer)}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Ajouter un serveur
+              </button>
+            </div>
           </div>
         </div>
       </div>
