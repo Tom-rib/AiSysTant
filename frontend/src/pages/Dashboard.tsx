@@ -107,10 +107,10 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 animate-fade-in">
-          <h1 className="text-3xl font-bold text-text mb-2">
+          <h1 className="text-3xl font-bold text-white mb-2">
             Bienvenue, {user?.username} ! 👋
           </h1>
-          <p className="text-text-light">
+          <p className="text-gray-300">
             Voici un aperçu de votre activité
           </p>
         </div>
@@ -144,7 +144,7 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-text mb-4">Actions rapides</h2>
+          <h2 className="text-xl font-bold text-white mb-4">Actions rapides</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {quickActions.map((action, index) => {
               const Icon = action.icon
@@ -160,10 +160,10 @@ export default function Dashboard() {
                       <Icon className={`w-8 h-8 text-${action.color}`} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-text mb-1">
+                      <h3 className="text-lg font-semibold text-white mb-1">
                         {action.title}
                       </h3>
-                      <p className="text-sm text-text-light">
+                      <p className="text-sm text-gray-300">
                         {action.description}
                       </p>
                     </div>
@@ -177,7 +177,7 @@ export default function Dashboard() {
         {/* System Status */}
         <div className="mt-8 card animate-fade-in">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-text">Statut du système</h2>
+            <h2 className="text-xl font-bold text-white">Statut du système</h2>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm text-green-600 font-medium">Opérationnel</span>
