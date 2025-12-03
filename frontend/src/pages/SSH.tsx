@@ -154,42 +154,65 @@ export default function SSH() {
       // Afficher la commande
       setTerminalOutput(prev => [...prev, `$ ${command}`])
       
-      // Construire la commande avec gestion du répertoire
-      let actualCommand = command.trim()
+      const trimmedCommand = command.trim()
+      let actualCommand = trimmedCommand
       
-      // Si c'est un 'cd', modifier le répertoire local et exécuter cd + pwd
-      if (actualCommand.startsWith('cd ')) {
-        const newDir = actualCommand.substring(3).trim()
-        actualCommand = `cd "${newDir}" && pwd`
-      } else {
-        // Pour les autres commandes, inclure le changement de répertoire
-        actualCommand = `cd "${currentDir}" && ${actualCommand}`
-      }
-      
-      const response = await sshAPI.executeCommand(selectedServerId, actualCommand)
-      
-      if (response.data.success) {
-        const result = response.data.data
-        const output = result?.output || ''
+      // Vérifier si c'est une commande cd
+      if (trimmedCommand.startsWith('cd ')) {
+        const pathArg = trimmedCommand.substring(3).trim()
         
-        // Si c'était un cd, le dernier ligne est le nouveau répertoire
-        if (command.trim().startsWith('cd ')) {
-          const lines = output.trim().split('\n')
-          if (lines.length > 0) {
-            const newPath = lines[lines.length - 1].trim()
-            if (newPath) {
-              setCurrentDir(newPath)
-            }
-          }
+        // Déterminer le nouveau chemin (relatif ou absolu)
+        let newPath: string
+        if (pathArg.startsWith('/')) {
+          // Chemin absolu
+          newPath = pathArg
+        } else if (pathArg === '..') {
+          // Remontez d'un niveau
+          const parts = currentDir.split('/')
+          parts.pop()
+          newPath = parts.join('/') || '/'
+        } else if (pathArg === '.' || pathArg === './') {
+          // Rester dans le même répertoire
+          newPath = currentDir
         } else {
-          // Afficher la sortie (sauf si vide)
-          if (output && !output.includes('cd ')) {
-            setTerminalOutput(prev => [...prev, output.trim()])
-          }
+          // Chemin relatif
+          newPath = currentDir === '/' 
+            ? `/${pathArg}` 
+            : `${currentDir}/${pathArg}`
+        }
+        
+        // Nettoyer le chemin (remplacer // par /, enlever les / finaux sauf pour /)
+        newPath = newPath.replace(/\/+/g, '/').replace(/\/$/, '') || '/'
+        
+        // Vérifier que le répertoire existe avec 'test -d'
+        actualCommand = `test -d "${newPath}" && echo "OK" || echo "NOT_FOUND"`
+        
+        const response = await sshAPI.executeCommand(selectedServerId, actualCommand)
+        
+        if (response.data.success && response.data.data?.output?.includes('OK')) {
+          setCurrentDir(newPath)
+          setTerminalOutput(prev => [...prev, `# Répertoire changé: ${newPath}`])
+        } else {
+          setTerminalOutput(prev => [...prev, `bash: cd: ${pathArg}: Aucun fichier ou dossier de ce type`])
         }
       } else {
-        const errorMsg = response.data.message || response.data.error || 'Erreur inconnue'
-        setTerminalOutput(prev => [...prev, `Erreur: ${errorMsg}`])
+        // Pour les autres commandes, exécuter depuis le répertoire courant
+        actualCommand = `cd "${currentDir}" && ${trimmedCommand}`
+        
+        const response = await sshAPI.executeCommand(selectedServerId, actualCommand)
+        
+        if (response.data.success) {
+          const result = response.data.data
+          const output = result?.output || ''
+          
+          // Afficher la sortie (sauf si vide)
+          if (output) {
+            setTerminalOutput(prev => [...prev, output.trim()])
+          }
+        } else {
+          const errorMsg = response.data.message || response.data.data?.error || 'Erreur inconnue'
+          setTerminalOutput(prev => [...prev, `Erreur: ${errorMsg}`])
+        }
       }
       
       setCommand('')
