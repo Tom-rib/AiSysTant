@@ -41,9 +41,9 @@ export function setupTerminalSockets(io: SocketIOServer) {
         if (result.success) {
           const session = TerminalSessionManager.getSession(sessionId);
           if (session) {
-            // ✅ CORRIGÉ: Envoyer sur un namespace unique par sessionId
+            // ✅ CORRIGÉ: Envoyer sur le channel GLOBAL 'terminal-output'
             session.stream.on('data', (data: Buffer) => {
-              socket.emit(`terminal-output-${sessionId}`, {
+              socket.emit('terminal-output', {
                 sessionId,
                 data: data.toString(),
               });

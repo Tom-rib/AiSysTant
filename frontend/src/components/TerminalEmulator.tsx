@@ -22,12 +22,12 @@ export default function TerminalEmulator({
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
 
+  // ✅ CORRIGÉ: Créer le terminal UNE SEULE FOIS au montage
   useEffect(() => {
-    if (!terminalRef.current || !socket) return;
+    if (!terminalRef.current) return;
 
-    console.log(`[TerminalEmulator] Initialisation: ${sessionId}`);
+    console.log(`[TerminalEmulator] Mount: ${sessionId}`);
 
-    // ✅ NOUVEAU: Créer une INSTANCE xterm isolée pour cette session
     const term = new Terminal({
       cursorBlink: true,
       theme: {
@@ -38,80 +38,18 @@ export default function TerminalEmulator({
 
     termRef.current = term;
 
-    // ✅ NOUVEAU: Ajouter le plugin de redimensionnement
     const fitAddon = new FitAddon();
     fitAddonRef.current = fitAddon;
     term.loadAddon(fitAddon);
 
-    // ✅ NOUVEAU: Ouvrir le terminal dans le DOM
     term.open(terminalRef.current);
     fitAddon.fit();
 
-    // ✅ NOUVEAU: Afficher un message initial
-    term.writeln(`\x1B[1;32m$ Terminal connecté (${sessionId})\x1B[0m`);
+    term.writeln(`\x1B[1;32m$ Terminal ${sessionId}\x1B[0m`);
 
-    // ✅ CORRIGÉ: Créer la session SSH côté backend avec le bon serverName
-    socket.emit(
-      'terminal-create',
-      {
-        sessionId,
-        serverId,
-        serverName,
-      },
-      (result: any) => {
-        if (result.success) {
-          console.log(`[TerminalEmulator] Session créée: ${sessionId}`);
-          term.writeln(`\x1B[0;32mConnecté au serveur (${result.currentDir})\x1B[0m`);
-        } else {
-          term.writeln(`\x1B[1;31mErreur: ${result.error}\x1B[0m`);
-        }
-      }
-    );
-
-    // ✅ CORRIGÉ: Écouter les données du serveur UNIQUEMENT pour cette session
-    const handleTerminalOutput = (data: any) => {
-      if (data.sessionId === sessionId && term) {
-        term.write(data.data);
-      }
-    };
-
-    // ✅ CORRIGÉ: Enregistrer le listener avec namespace pour cette session
-    socket.on(`terminal-output-${sessionId}`, handleTerminalOutput);
-
-    // ✅ CORRIGÉ: Envoyer l'input de l'utilisateur avec callback
-    const handleDataInput = (data: string) => {
-      socket.emit('terminal-input', {
-        sessionId,
-        input: data,
-      }, (result: any) => {
-        if (!result?.success) {
-          console.error('[TerminalEmulator] Erreur input:', result?.error);
-        }
-      });
-    };
-
-    term.onData(handleDataInput);
-
-    // ✅ NOUVEAU: Redimensionner au changement de fenêtre
-    const handleResize = () => {
-      if (fitAddonRef.current && terminalRef.current) {
-        fitAddonRef.current.fit();
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    // ✅ NOUVEAU: Cleanup
+    // ✅ CORRIGÉ: Nettoyer UNIQUEMENT le terminal au unmount
     return () => {
-      console.log(`[TerminalEmulator] Cleanup: ${sessionId}`);
-
-      // ✅ CORRIGÉ: Arrêter d'écouter les événements avec le bon namespace
-      socket.off(`terminal-output-${sessionId}`, handleTerminalOutput);
-
-      // ✅ CORRIGÉ: Supprimer le listener de redimensionnement
-      window.removeEventListener('resize', handleResize);
-
-      // ✅ CORRIGÉ: Disposer du terminal AVANT de quitter
+      console.log(`[TerminalEmulator] Unmount: ${sessionId}`);
       if (termRef.current) {
         try {
           termRef.current.dispose();
@@ -120,10 +58,86 @@ export default function TerminalEmulator({
         }
         termRef.current = null;
       }
-
-      // ✅ NOUVEAU: Le socket reste ouvert pour les autres onglets
     };
-  }, [sessionId, serverId, socket]);
+  }, []); // Vide! Une seule fois!
+
+  // ✅ CORRIGÉ: Créer la session SSH au montage
+  useEffect(() => {
+    if (!socket || !termRef.current) return;
+
+    console.log(`[TerminalEmulator] Create session: ${sessionId}`);
+
+    socket.emit(
+      'terminal-create',
+      {
+        sessionId,
+        serverId,
+        serverName,
+      },
+      (result: any) => {
+        if (termRef.current) {
+          if (result?.success) {
+            console.log(`[TerminalEmulator] Session créée: ${sessionId}`);
+            termRef.current.writeln(`\x1B[0;32mConnecté - ${result.currentDir}\x1B[0m`);
+          } else {
+            console.error(`[TerminalEmulator] Erreur:`, result);
+            termRef.current.writeln(`\x1B[1;31mErreur: ${result?.error || 'Inconnu'}\x1B[0m`);
+          }
+        }
+      }
+    );
+
+    // ✅ CORRIGÉ: Écouter les données GLOBALES (pas de cleanup!)
+    const handleTerminalOutput = (data: any) => {
+      if (data.sessionId === sessionId && termRef.current) {
+        console.log(`[TerminalEmulator] Output: ${sessionId} - ${data.data.length} chars`);
+        termRef.current.write(data.data);
+      }
+    };
+
+    socket.on('terminal-output', handleTerminalOutput);
+
+    // ✅ CORRIGÉ: Pas de cleanup des listeners!
+    return () => {
+      // Ne PAS supprimer le listener!
+    };
+  }, [sessionId, serverId, serverName, socket]);
+
+  // ✅ CORRIGÉ: Input séparé
+  useEffect(() => {
+    if (!termRef.current || !socket) return;
+
+    console.log(`[TerminalEmulator] Setup input: ${sessionId}`);
+
+    const handleDataInput = (data: string) => {
+      console.log(`[TerminalEmulator] User input: ${JSON.stringify(data)}`);
+      socket.emit('terminal-input', { sessionId, input: data });
+    };
+
+    termRef.current.onData(handleDataInput);
+
+    // ✅ CORRIGÉ: Pas de cleanup!
+    return () => {};
+  }, [sessionId, socket]);
+
+  // ✅ CORRIGÉ: Resize
+  useEffect(() => {
+    if (!fitAddonRef.current) return;
+
+    const handleResize = () => {
+      try {
+        fitAddonRef.current?.fit();
+      } catch (error) {
+        console.error('[TerminalEmulator] Erreur resize:', error);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   return (
     <div
