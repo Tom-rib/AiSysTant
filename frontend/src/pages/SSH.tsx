@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Server, ArrowLeft, Terminal, LogOut, HelpCircle, X } from 'lucide-react'
+import { Plus, Server, ArrowLeft, Terminal, HelpCircle, X } from 'lucide-react'
 import { sshAPI } from '../services/api'
 
 interface SSHServer {

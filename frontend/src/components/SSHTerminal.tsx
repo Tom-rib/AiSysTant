@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, X, LogOut, RotateCcw, Terminal as TerminalIcon } from 'lucide-react';
+import { Send, LogOut, RotateCcw, Terminal as TerminalIcon } from 'lucide-react';
 import '../styles/ssh-terminal.css';
 
 // ✅ NOUVEAU: Interface pour les messages du terminal

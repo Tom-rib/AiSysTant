@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { Mail, Lock, AlertCircle, Loader } from 'lucide-react'
 import logo from '/logo-192.png'
@@ -12,7 +12,6 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
 
   const { login } = useAuth()
-  const navigate = useNavigate()
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
