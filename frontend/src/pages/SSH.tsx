@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Server, ArrowLeft, Trash2, Terminal } from 'lucide-react'
+import { Plus, Server, ArrowLeft, Trash2, Terminal, LogOut } from 'lucide-react'
 import { sshAPI } from '../services/api'
 
 interface SSHServer {
@@ -12,6 +12,13 @@ interface SSHServer {
   connected?: boolean
 }
 
+interface TerminalState {
+  serverId: number | null
+  output: string[]
+  currentDir: string
+  isConnected: boolean
+}
+
 export default function SSH() {
   const navigate = useNavigate()
   
@@ -20,8 +27,10 @@ export default function SSH() {
   const [isAddingServer, setIsAddingServer] = useState(false)
   const [selectedServerId, setSelectedServerId] = useState<number | null>(null)
   const [terminalOutput, setTerminalOutput] = useState<string[]>([])
+  const [currentDir, setCurrentDir] = useState('/home')
   const [command, setCommand] = useState('')
   const [isExecuting, setIsExecuting] = useState(false)
+  const terminalEndRef = useRef<HTMLDivElement>(null)
   
   const [newServer, setNewServer] = useState({
     name: '',
@@ -32,9 +41,41 @@ export default function SSH() {
     privateKey: '',
   })
 
+  // Charger l'état du terminal depuis localStorage
   useEffect(() => {
+    const savedState = localStorage.getItem('sshTerminalState')
+    if (savedState) {
+      try {
+        const state: TerminalState = JSON.parse(savedState)
+        if (state.serverId) {
+          setSelectedServerId(state.serverId)
+          setTerminalOutput(state.output)
+          setCurrentDir(state.currentDir)
+        }
+      } catch (e) {
+        console.error('Erreur chargement état terminal:', e)
+      }
+    }
     loadServers()
   }, [])
+
+  // Sauvegarder l'état du terminal dans localStorage
+  useEffect(() => {
+    if (selectedServerId) {
+      const state: TerminalState = {
+        serverId: selectedServerId,
+        output: terminalOutput,
+        currentDir,
+        isConnected: true,
+      }
+      localStorage.setItem('sshTerminalState', JSON.stringify(state))
+    }
+  }, [selectedServerId, terminalOutput, currentDir])
+
+  // Auto-scroll vers le bas
+  useEffect(() => {
+    terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [terminalOutput])
 
   const loadServers = async () => {
     try {
@@ -96,6 +137,8 @@ export default function SSH() {
       if (selectedServerId === serverId) {
         setSelectedServerId(null)
         setTerminalOutput([])
+        setCurrentDir('/home')
+        localStorage.removeItem('sshTerminalState')
       }
     } catch (error: any) {
       console.error('Erreur suppression serveur:', error)
@@ -108,14 +151,37 @@ export default function SSH() {
 
     setIsExecuting(true)
     try {
+      // Afficher la commande
       setTerminalOutput(prev => [...prev, `$ ${command}`])
       
-      const response = await sshAPI.executeCommand(selectedServerId, command)
+      // Construire la commande avec gestion du répertoire
+      let actualCommand = command.trim()
+      
+      // Si c'est un 'cd', modifier le répertoire local et exécuter cd + pwd
+      if (actualCommand.startsWith('cd ')) {
+        const newDir = actualCommand.substring(3).trim()
+        actualCommand = `cd "${newDir}" && pwd`
+      } else {
+        // Pour les autres commandes, inclure le changement de répertoire
+        actualCommand = `cd "${currentDir}" && ${actualCommand}`
+      }
+      
+      const response = await sshAPI.executeCommand(selectedServerId, actualCommand)
       
       if (response.data.success) {
         const output = response.data.data?.output || response.data.data?.stdout || ''
-        if (output) {
-          setTerminalOutput(prev => [...prev, output])
+        
+        // Si c'était un cd, le dernier ligne est le nouveau répertoire
+        if (command.trim().startsWith('cd ')) {
+          const lines = output.trim().split('\n')
+          if (lines.length > 0) {
+            setCurrentDir(lines[lines.length - 1])
+          }
+        } else {
+          // Afficher la sortie (sauf si vide)
+          if (output && !output.includes('cd ')) {
+            setTerminalOutput(prev => [...prev, output.trim()])
+          }
         }
       } else {
         setTerminalOutput(prev => [...prev, `Erreur: ${response.data.message}`])
@@ -128,6 +194,14 @@ export default function SSH() {
     } finally {
       setIsExecuting(false)
     }
+  }
+
+  const disconnectServer = () => {
+    setSelectedServerId(null)
+    setTerminalOutput([])
+    setCurrentDir('/home')
+    setCommand('')
+    localStorage.removeItem('sshTerminalState')
   }
 
   if (loading) {
@@ -279,44 +353,62 @@ export default function SSH() {
             {selectedServerId ? (
               <div className="bg-gray-900 rounded-lg overflow-hidden flex flex-col h-full" style={{ minHeight: '500px' }}>
                 {/* Terminal Header */}
-                <div className="bg-gray-800 border-b border-gray-700 p-3 flex items-center gap-2">
-                  <Terminal className="w-4 h-4 text-green-400" />
-                  <span className="text-green-400 text-sm font-mono">
-                    {servers.find(s => s.id === selectedServerId)?.name}
-                  </span>
+                <div className="bg-gray-800 border-b border-gray-700 p-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-green-400" />
+                    <span className="text-green-400 text-sm font-mono">
+                      {servers.find(s => s.id === selectedServerId)?.name}
+                    </span>
+                    <span className="text-gray-500 text-xs">• {currentDir}</span>
+                  </div>
+                  <button
+                    onClick={disconnectServer}
+                    className="text-red-400 hover:text-red-300 p-1"
+                    title="Déconnecter"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
                 </div>
 
                 {/* Terminal Output */}
                 <div className="flex-1 overflow-y-auto p-4 font-mono text-sm text-green-400 space-y-1">
                   {terminalOutput.length === 0 ? (
-                    <div className="text-gray-500">Terminal prêt...</div>
+                    <div className="text-gray-500">Connecté. Prêt à exécuter des commandes...</div>
                   ) : (
-                    terminalOutput.map((line, i) => (
-                      <div key={i} className="whitespace-pre-wrap break-words">
-                        {line}
-                      </div>
-                    ))
+                    <>
+                      {terminalOutput.map((line, i) => (
+                        <div key={i} className="whitespace-pre-wrap break-words">
+                          {line}
+                        </div>
+                      ))}
+                      <div ref={terminalEndRef} />
+                    </>
                   )}
                 </div>
 
                 {/* Terminal Input */}
                 <div className="bg-gray-800 border-t border-gray-700 p-3">
                   <div className="flex gap-2">
-                    <span className="text-green-400 text-sm font-mono">$ </span>
+                    <span className="text-green-400 text-sm font-mono whitespace-nowrap">
+                      {currentDir}$
+                    </span>
                     <input
                       type="text"
                       value={command}
                       onChange={(e) => setCommand(e.target.value)}
                       onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === 'Enter' && !isExecuting) {
                           executeCommand()
                         }
                       }}
-                      placeholder="Entrez une commande..."
+                      placeholder="Tapez une commande..."
                       disabled={isExecuting}
                       className="flex-1 bg-transparent outline-none text-green-400 text-sm placeholder-gray-500"
                       autoFocus
                     />
+                    {isExecuting && (
+                      <span className="text-gray-500 text-xs">Exécution...</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -334,4 +426,5 @@ export default function SSH() {
     </div>
   )
 }
+
 
