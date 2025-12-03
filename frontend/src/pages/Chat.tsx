@@ -323,6 +323,7 @@ export default function Chat() {
               </div>
             )}
           </div>
+        </div>
 
         <div className="flex-1 flex flex-col">
           {currentConversationId ? (
