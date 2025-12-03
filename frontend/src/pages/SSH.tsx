@@ -169,13 +169,17 @@ export default function SSH() {
       const response = await sshAPI.executeCommand(selectedServerId, actualCommand)
       
       if (response.data.success) {
-        const output = response.data.data?.output || response.data.data?.stdout || ''
+        const result = response.data.data
+        const output = result?.output || ''
         
         // Si c'était un cd, le dernier ligne est le nouveau répertoire
         if (command.trim().startsWith('cd ')) {
           const lines = output.trim().split('\n')
           if (lines.length > 0) {
-            setCurrentDir(lines[lines.length - 1])
+            const newPath = lines[lines.length - 1].trim()
+            if (newPath) {
+              setCurrentDir(newPath)
+            }
           }
         } else {
           // Afficher la sortie (sauf si vide)
@@ -184,13 +188,15 @@ export default function SSH() {
           }
         }
       } else {
-        setTerminalOutput(prev => [...prev, `Erreur: ${response.data.message}`])
+        const errorMsg = response.data.message || response.data.error || 'Erreur inconnue'
+        setTerminalOutput(prev => [...prev, `Erreur: ${errorMsg}`])
       }
       
       setCommand('')
     } catch (error: any) {
       console.error('Erreur exécution:', error)
-      setTerminalOutput(prev => [...prev, `Erreur: ${error.message}`])
+      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Erreur de connexion'
+      setTerminalOutput(prev => [...prev, `Erreur: ${errorMsg}`])
     } finally {
       setIsExecuting(false)
     }
