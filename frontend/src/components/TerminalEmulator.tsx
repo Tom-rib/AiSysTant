@@ -4,16 +4,18 @@ import { FitAddon } from 'xterm-addon-fit';
 import { Socket } from 'socket.io-client';
 import 'xterm/css/xterm.css';
 
-// ✅ NOUVEAU: Props pour l'émulateur
+// ✅ CORRIGÉ: Props pour l'émulateur
 interface TerminalEmulatorProps {
   sessionId: string;
   serverId: number;
+  serverName: string;
   socket: Socket;
 }
 
 export default function TerminalEmulator({
   sessionId,
   serverId,
+  serverName,
   socket,
 }: TerminalEmulatorProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
@@ -48,13 +50,13 @@ export default function TerminalEmulator({
     // ✅ NOUVEAU: Afficher un message initial
     term.writeln(`\x1B[1;32m$ Terminal connecté (${sessionId})\x1B[0m`);
 
-    // ✅ NOUVEAU: Créer la session SSH côté backend
+    // ✅ CORRIGÉ: Créer la session SSH côté backend avec le bon serverName
     socket.emit(
       'terminal-create',
       {
         sessionId,
         serverId,
-        serverName: 'Server',
+        serverName,
       },
       (result: any) => {
         if (result.success) {
@@ -66,24 +68,29 @@ export default function TerminalEmulator({
       }
     );
 
-    // ✅ NOUVEAU: Écouter les données du serveur
-    // Important: chaque émulateur écoute SEULEMENT ses propres données (via sessionId)
+    // ✅ CORRIGÉ: Écouter les données du serveur UNIQUEMENT pour cette session
     const handleTerminalOutput = (data: any) => {
-      if (data.sessionId === sessionId) {
+      if (data.sessionId === sessionId && term) {
         term.write(data.data);
       }
     };
 
-    socket.on('terminal-output', handleTerminalOutput);
+    // ✅ CORRIGÉ: Enregistrer le listener avec namespace pour cette session
+    socket.on(`terminal-output-${sessionId}`, handleTerminalOutput);
 
-    // ✅ NOUVEAU: Envoyer l'input de l'utilisateur
-    // Important: inclure sessionId pour isolation
-    term.onData(data => {
+    // ✅ CORRIGÉ: Envoyer l'input de l'utilisateur avec callback
+    const handleDataInput = (data: string) => {
       socket.emit('terminal-input', {
         sessionId,
         input: data,
+      }, (result: any) => {
+        if (!result?.success) {
+          console.error('[TerminalEmulator] Erreur input:', result?.error);
+        }
       });
-    });
+    };
+
+    term.onData(handleDataInput);
 
     // ✅ NOUVEAU: Redimensionner au changement de fenêtre
     const handleResize = () => {
@@ -98,15 +105,19 @@ export default function TerminalEmulator({
     return () => {
       console.log(`[TerminalEmulator] Cleanup: ${sessionId}`);
 
-      // ✅ NOUVEAU: Arrêter d'écouter les événements
-      socket.off('terminal-output', handleTerminalOutput);
+      // ✅ CORRIGÉ: Arrêter d'écouter les événements avec le bon namespace
+      socket.off(`terminal-output-${sessionId}`, handleTerminalOutput);
 
-      // ✅ NOUVEAU: Supprimer le listener de redimensionnement
+      // ✅ CORRIGÉ: Supprimer le listener de redimensionnement
       window.removeEventListener('resize', handleResize);
 
-      // ✅ NOUVEAU: Disposer du terminal (NE PAS fermer le socket!)
+      // ✅ CORRIGÉ: Disposer du terminal AVANT de quitter
       if (termRef.current) {
-        termRef.current.dispose();
+        try {
+          termRef.current.dispose();
+        } catch (error) {
+          console.error('[TerminalEmulator] Erreur dispose:', error);
+        }
         termRef.current = null;
       }
 
