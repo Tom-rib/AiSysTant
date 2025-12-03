@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Server, ArrowLeft, Trash2, Terminal, LogOut, HelpCircle } from 'lucide-react'
+import { Plus, Server, ArrowLeft, Terminal, LogOut, HelpCircle, X } from 'lucide-react'
 import { sshAPI } from '../services/api'
 
 interface SSHServer {
@@ -12,8 +12,9 @@ interface SSHServer {
   connected?: boolean
 }
 
-interface TerminalState {
-  serverId: number | null
+interface TerminalSession {
+  serverId: number
+  serverName: string
   output: string[]
   currentDir: string
   isConnected: boolean
@@ -25,9 +26,10 @@ export default function SSH() {
   const [servers, setServers] = useState<SSHServer[]>([])
   const [loading, setLoading] = useState(true)
   const [isAddingServer, setIsAddingServer] = useState(false)
-  const [selectedServerId, setSelectedServerId] = useState<number | null>(null)
-  const [terminalOutput, setTerminalOutput] = useState<string[]>([])
-  const [currentDir, setCurrentDir] = useState('/home')
+  
+  // Gestion de plusieurs terminaux
+  const [activeSessions, setActiveSessions] = useState<Map<number, TerminalSession>>(new Map())
+  const [activeServerId, setActiveServerId] = useState<number | null>(null)
   const [command, setCommand] = useState('')
   const [isExecuting, setIsExecuting] = useState(false)
   const terminalEndRef = useRef<HTMLDivElement>(null)
@@ -41,41 +43,34 @@ export default function SSH() {
     privateKey: '',
   })
 
-  // Charger l'état du terminal depuis localStorage
+  // Charger l'état des sessions depuis localStorage
   useEffect(() => {
-    const savedState = localStorage.getItem('sshTerminalState')
-    if (savedState) {
+    const savedSessions = localStorage.getItem('sshSessions')
+    if (savedSessions) {
       try {
-        const state: TerminalState = JSON.parse(savedState)
-        if (state.serverId) {
-          setSelectedServerId(state.serverId)
-          setTerminalOutput(state.output)
-          setCurrentDir(state.currentDir)
+        const sessions = JSON.parse(savedSessions)
+        setActiveSessions(new Map(sessions))
+        if (sessions.length > 0) {
+          setActiveServerId(sessions[0][0])
         }
       } catch (e) {
-        console.error('Erreur chargement état terminal:', e)
+        console.error('Erreur chargement sessions:', e)
       }
     }
     loadServers()
   }, [])
 
-  // Sauvegarder l'état du terminal dans localStorage
+  // Sauvegarder l'état des sessions dans localStorage
   useEffect(() => {
-    if (selectedServerId) {
-      const state: TerminalState = {
-        serverId: selectedServerId,
-        output: terminalOutput,
-        currentDir,
-        isConnected: true,
-      }
-      localStorage.setItem('sshTerminalState', JSON.stringify(state))
+    if (activeSessions.size > 0) {
+      localStorage.setItem('sshSessions', JSON.stringify(Array.from(activeSessions.entries())))
     }
-  }, [selectedServerId, terminalOutput, currentDir])
+  }, [activeSessions])
 
   // Auto-scroll vers le bas
   useEffect(() => {
     terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [terminalOutput])
+  }, [activeServerId, activeSessions])
 
   const loadServers = async () => {
     try {
@@ -134,84 +129,121 @@ export default function SSH() {
     try {
       await sshAPI.deleteServer(serverId)
       await loadServers()
-      if (selectedServerId === serverId) {
-        setSelectedServerId(null)
-        setTerminalOutput([])
-        setCurrentDir('/home')
-        localStorage.removeItem('sshTerminalState')
-      }
+      closeSession(serverId)
     } catch (error: any) {
       console.error('Erreur suppression serveur:', error)
       alert('Erreur lors de la suppression')
     }
   }
 
+  const openSession = (serverId: number, serverName: string) => {
+    if (!activeSessions.has(serverId)) {
+      const newSession: TerminalSession = {
+        serverId,
+        serverName,
+        output: [],
+        currentDir: '/home',
+        isConnected: true,
+      }
+      activeSessions.set(serverId, newSession)
+      setActiveSessions(new Map(activeSessions))
+    }
+    setActiveServerId(serverId)
+  }
+
+  const closeSession = (serverId: number) => {
+    const newSessions = new Map(activeSessions)
+    newSessions.delete(serverId)
+    setActiveSessions(newSessions)
+    
+    if (activeServerId === serverId) {
+      const remaining = Array.from(newSessions.keys())
+      setActiveServerId(remaining.length > 0 ? remaining[0] : null)
+    }
+  }
+
+  const getCurrentSession = () => {
+    return activeServerId ? activeSessions.get(activeServerId) : null
+  }
+
+  const updateSessionOutput = (serverId: number, newOutput: string[]) => {
+    const session = activeSessions.get(serverId)
+    if (session) {
+      session.output = newOutput
+      setActiveSessions(new Map(activeSessions))
+    }
+  }
+
+  const updateSessionDir = (serverId: number, dir: string) => {
+    const session = activeSessions.get(serverId)
+    if (session) {
+      session.currentDir = dir
+      setActiveSessions(new Map(activeSessions))
+    }
+  }
+
   const executeCommand = async () => {
-    if (!command.trim() || !selectedServerId || isExecuting) return
+    if (!command.trim() || !activeServerId || isExecuting) return
+
+    const session = getCurrentSession()
+    if (!session) return
 
     setIsExecuting(true)
     try {
-      // Afficher la commande
-      setTerminalOutput(prev => [...prev, `$ ${command}`])
-      
       const trimmedCommand = command.trim()
+      updateSessionOutput(activeServerId, [...session.output, `$ ${trimmedCommand}`])
+      
       let actualCommand = trimmedCommand
       
-      // Vérifier si c'est une commande cd
       if (trimmedCommand.startsWith('cd ')) {
         const pathArg = trimmedCommand.substring(3).trim()
         
-        // Déterminer le nouveau chemin (relatif ou absolu)
         let newPath: string
         if (pathArg.startsWith('/')) {
-          // Chemin absolu
           newPath = pathArg
         } else if (pathArg === '..') {
-          // Remontez d'un niveau
-          const parts = currentDir.split('/')
+          const parts = session.currentDir.split('/')
           parts.pop()
           newPath = parts.join('/') || '/'
         } else if (pathArg === '.' || pathArg === './') {
-          // Rester dans le même répertoire
-          newPath = currentDir
+          newPath = session.currentDir
         } else {
-          // Chemin relatif
-          newPath = currentDir === '/' 
+          newPath = session.currentDir === '/' 
             ? `/${pathArg}` 
-            : `${currentDir}/${pathArg}`
+            : `${session.currentDir}/${pathArg}`
         }
         
-        // Nettoyer le chemin (remplacer // par /, enlever les / finaux sauf pour /)
         newPath = newPath.replace(/\/+/g, '/').replace(/\/$/, '') || '/'
         
-        // Vérifier que le répertoire existe avec 'test -d'
         actualCommand = `test -d "${newPath}" && echo "OK" || echo "NOT_FOUND"`
         
-        const response = await sshAPI.executeCommand(selectedServerId, actualCommand)
+        const response = await sshAPI.executeCommand(activeServerId, actualCommand)
         
         if (response.data.success && response.data.data?.output?.includes('OK')) {
-          setCurrentDir(newPath)
-          setTerminalOutput(prev => [...prev, `# Répertoire changé: ${newPath}`])
+          updateSessionDir(activeServerId, newPath)
+          const updated = activeSessions.get(activeServerId)?.output || []
+          updateSessionOutput(activeServerId, [...updated, `# Répertoire changé: ${newPath}`])
         } else {
-          setTerminalOutput(prev => [...prev, `bash: cd: ${pathArg}: Aucun fichier ou dossier de ce type`])
+          const updated = activeSessions.get(activeServerId)?.output || []
+          updateSessionOutput(activeServerId, [...updated, `bash: cd: ${pathArg}: Aucun fichier ou dossier de ce type`])
         }
       } else {
-        // Pour les autres commandes, exécuter depuis le répertoire courant
-        actualCommand = `cd "${currentDir}" && ${trimmedCommand}`
+        actualCommand = `cd "${session.currentDir}" && ${trimmedCommand}`
         
-        const response = await sshAPI.executeCommand(selectedServerId, actualCommand)
+        const response = await sshAPI.executeCommand(activeServerId, actualCommand)
         
         if (response.data.success) {
           const result = response.data.data
           const output = result?.output || ''
           
-          // Afficher la sortie (sauf si vide)
           if (output) {
-            setTerminalOutput(prev => [...prev, output.trim()])
+            const updated = activeSessions.get(activeServerId)?.output || []
+            updateSessionOutput(activeServerId, [...updated, output.trim()])
           }
         } else {
           const errorMsg = response.data.message || response.data.data?.error || 'Erreur inconnue'
-          setTerminalOutput(prev => [...prev, `Erreur: ${errorMsg}`])
+          const updated = activeSessions.get(activeServerId)?.output || []
+          updateSessionOutput(activeServerId, [...updated, `Erreur: ${errorMsg}`])
         }
       }
       
@@ -219,18 +251,15 @@ export default function SSH() {
     } catch (error: any) {
       console.error('Erreur exécution:', error)
       const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || 'Erreur de connexion'
-      setTerminalOutput(prev => [...prev, `Erreur: ${errorMsg}`])
+      const updated = activeSessions.get(activeServerId)?.output || []
+      updateSessionOutput(activeServerId, [...updated, `Erreur: ${errorMsg}`])
     } finally {
       setIsExecuting(false)
     }
   }
 
-  const disconnectServer = () => {
-    setSelectedServerId(null)
-    setTerminalOutput([])
-    setCurrentDir('/home')
-    setCommand('')
-    localStorage.removeItem('sshTerminalState')
+  const clearSessionOutput = (serverId: number) => {
+    updateSessionOutput(serverId, [])
   }
 
   if (loading) {
@@ -243,6 +272,8 @@ export default function SSH() {
       </div>
     )
   }
+
+  const currentSession = getCurrentSession()
 
   return (
     <div className="min-h-screen bg-background">
@@ -257,7 +288,7 @@ export default function SSH() {
               >
                 <ArrowLeft className="w-5 h-5 text-text" />
               </button>
-              <h1 className="text-3xl font-bold text-text">SSH Terminal</h1>
+              <h1 className="text-3xl font-bold text-text">SSH Terminal Multi-Serveur</h1>
             </div>
             <div className="flex items-center gap-3">
               <button
@@ -346,7 +377,7 @@ export default function SSH() {
         <div className="grid grid-cols-3 gap-6">
           {/* Servers List */}
           <div className="col-span-1">
-            <h2 className="text-lg font-semibold text-text mb-3">Serveurs</h2>
+            <h2 className="text-lg font-semibold text-text mb-3">Serveurs ({activeSessions.size} connectés)</h2>
             {servers.length === 0 ? (
               <div className="p-4 bg-gray-50 rounded-lg text-center text-text-light">
                 <Server className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -355,30 +386,44 @@ export default function SSH() {
             ) : (
               <div className="space-y-2">
                 {servers.map(server => (
-                  <div
-                    key={server.id}
-                    className={`p-3 rounded-lg border cursor-pointer transition ${
-                      selectedServerId === server.id
-                        ? 'border-primary bg-primary/5'
-                        : 'border-gray-200 hover:border-primary'
-                    }`}
-                    onClick={() => setSelectedServerId(server.id)}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-text">{server.name}</p>
-                        <p className="text-xs text-text-light">
-                          {server.username}@{server.host}:{server.port}
+                  <div key={server.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => openSession(server.id, server.name)}
+                      className={`w-full p-3 text-left transition ${
+                        activeServerId === server.id
+                          ? 'bg-primary text-white'
+                          : 'bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      <p className="font-medium">{server.name}</p>
+                      <p className={`text-xs ${activeServerId === server.id ? 'text-white' : 'text-text-light'}`}>
+                        {server.username}@{server.host}:{server.port}
+                      </p>
+                      {activeSessions.has(server.id) && (
+                        <p className={`text-xs mt-1 ${activeServerId === server.id ? 'text-white' : 'text-green-600'}`}>
+                          ● Connecté
                         </p>
-                      </div>
+                      )}
+                    </button>
+                    <div className="flex border-t border-gray-200">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteServer(server.id)
+                        onClick={() => {
+                          if (activeSessions.has(server.id)) {
+                            clearSessionOutput(server.id)
+                          }
                         }}
-                        className="text-red-600 hover:text-red-800 p-1"
+                        className="flex-1 p-2 text-xs text-gray-600 hover:bg-gray-50 border-r border-gray-200 disabled:opacity-50"
+                        title="Effacer le terminal"
+                        disabled={!activeSessions.has(server.id)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        🧹 Effacer
+                      </button>
+                      <button
+                        onClick={() => handleDeleteServer(server.id)}
+                        className="flex-1 p-2 text-xs text-red-600 hover:bg-red-50"
+                        title="Supprimer"
+                      >
+                        🗑️ Supprimer
                       </button>
                     </div>
                   </div>
@@ -387,76 +432,100 @@ export default function SSH() {
             )}
           </div>
 
-          {/* Terminal */}
+          {/* Terminal Tabs & Display */}
           <div className="col-span-2">
-            {selectedServerId ? (
-              <div className="bg-gray-900 rounded-lg overflow-hidden flex flex-col h-full" style={{ minHeight: '500px' }}>
-                {/* Terminal Header */}
-                <div className="bg-gray-800 border-b border-gray-700 p-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Terminal className="w-4 h-4 text-green-400" />
-                    <span className="text-green-400 text-sm font-mono">
-                      {servers.find(s => s.id === selectedServerId)?.name}
-                    </span>
-                    <span className="text-gray-500 text-xs">• {currentDir}</span>
-                  </div>
-                  <button
-                    onClick={disconnectServer}
-                    className="text-red-400 hover:text-red-300 p-1"
-                    title="Déconnecter"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </button>
-                </div>
-
-                {/* Terminal Output */}
-                <div className="flex-1 overflow-y-auto p-4 font-mono text-sm text-green-400 space-y-1">
-                  {terminalOutput.length === 0 ? (
-                    <div className="text-gray-500">Connecté. Prêt à exécuter des commandes...</div>
-                  ) : (
-                    <>
-                      {terminalOutput.map((line, i) => (
-                        <div key={i} className="whitespace-pre-wrap break-words">
-                          {line}
-                        </div>
-                      ))}
-                      <div ref={terminalEndRef} />
-                    </>
-                  )}
-                </div>
-
-                {/* Terminal Input */}
-                <div className="bg-gray-800 border-t border-gray-700 p-3">
-                  <div className="flex gap-2">
-                    <span className="text-green-400 text-sm font-mono whitespace-nowrap">
-                      {currentDir}$
-                    </span>
-                    <input
-                      type="text"
-                      value={command}
-                      onChange={(e) => setCommand(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !isExecuting) {
-                          executeCommand()
-                        }
-                      }}
-                      placeholder="Tapez une commande..."
-                      disabled={isExecuting}
-                      className="flex-1 bg-transparent outline-none text-green-400 text-sm placeholder-gray-500"
-                      autoFocus
-                    />
-                    {isExecuting && (
-                      <span className="text-gray-500 text-xs">Exécution...</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ) : (
+            {activeSessions.size === 0 ? (
               <div className="bg-gray-50 rounded-lg p-8 text-center flex items-center justify-center" style={{ minHeight: '500px' }}>
                 <div>
                   <Terminal className="w-12 h-12 mx-auto mb-3 text-text-light opacity-50" />
-                  <p className="text-text-light">Sélectionnez un serveur pour commencer</p>
+                  <p className="text-text-light">Connectez-vous à un serveur pour commencer</p>
                 </div>
+              </div>
+            ) : (
+              <div className="bg-gray-900 rounded-lg overflow-hidden flex flex-col" style={{ minHeight: '500px' }}>
+                {/* Tabs */}
+                <div className="bg-gray-800 border-b border-gray-700 flex overflow-x-auto">
+                  {Array.from(activeSessions.values()).map(session => (
+                    <div
+                      key={session.serverId}
+                      className={`flex items-center gap-2 px-4 py-3 cursor-pointer border-r border-gray-700 transition whitespace-nowrap ${
+                        activeServerId === session.serverId
+                          ? 'bg-primary text-white'
+                          : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      }`}
+                      onClick={() => setActiveServerId(session.serverId)}
+                    >
+                      <Terminal className="w-4 h-4 flex-shrink-0" />
+                      <span className="text-sm font-mono">{session.serverName}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          closeSession(session.serverId)
+                        }}
+                        className="ml-2 hover:text-red-400 flex-shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {currentSession && (
+                  <>
+                    {/* Terminal Header */}
+                    <div className="bg-gray-800 border-b border-gray-700 p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="w-4 h-4 text-green-400" />
+                        <span className="text-green-400 text-sm font-mono">
+                          {currentSession.serverName}
+                        </span>
+                        <span className="text-gray-500 text-xs">• {currentSession.currentDir}</span>
+                      </div>
+                    </div>
+
+                    {/* Terminal Output */}
+                    <div className="flex-1 overflow-y-auto p-4 font-mono text-sm text-green-400 space-y-1">
+                      {currentSession.output.length === 0 ? (
+                        <div className="text-gray-500">Terminal prêt...</div>
+                      ) : (
+                        <>
+                          {currentSession.output.map((line, i) => (
+                            <div key={i} className="whitespace-pre-wrap break-words">
+                              {line}
+                            </div>
+                          ))}
+                          <div ref={terminalEndRef} />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Terminal Input */}
+                    <div className="bg-gray-800 border-t border-gray-700 p-3">
+                      <div className="flex gap-2">
+                        <span className="text-green-400 text-sm font-mono whitespace-nowrap">
+                          {currentSession.currentDir}$
+                        </span>
+                        <input
+                          type="text"
+                          value={command}
+                          onChange={(e) => setCommand(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !isExecuting) {
+                              executeCommand()
+                            }
+                          }}
+                          placeholder="Tapez une commande..."
+                          disabled={isExecuting}
+                          className="flex-1 bg-transparent outline-none text-green-400 text-sm placeholder-gray-500"
+                          autoFocus
+                        />
+                        {isExecuting && (
+                          <span className="text-gray-500 text-xs">Exécution...</span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -465,5 +534,3 @@ export default function SSH() {
     </div>
   )
 }
-
-
