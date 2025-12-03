@@ -19,7 +19,7 @@ export default function Navbar() {
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/chat', label: 'Chat IA', icon: MessageSquare },
     { path: '/ssh', label: 'SSH', icon: Terminal },
-    { path: '/account/settings', label: 'Configuration', icon: Key },
+    { path: '/account/settings', label: 'Clé API', icon: Key },
   ]
 
   const isActive = (path: string) => location.pathname === path
