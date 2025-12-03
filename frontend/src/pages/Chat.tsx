@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { Send, Loader, Plus, Trash2, MessageSquare, Bot } from 'lucide-react'
 import ChatMessage from '../components/ChatMessage'
+// ✅ NOUVEAU: Importer le guide ChatIA
+import ChatIAGuide from '../components/ChatIAGuide'
 import { chatAPI } from '../services/api'
 import { socketService } from '../services/socket'
 import { useChat } from '../context/ChatContext'
@@ -298,8 +300,14 @@ export default function Chat() {
                     </div>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center max-w-md">
+                  <div className="flex flex-col items-center justify-start h-full space-y-6 overflow-y-auto py-6">
+                    {/* ✅ NOUVEAU: Afficher le guide en premier */}
+                    <div className="w-full max-w-2xl px-6">
+                      <ChatIAGuide />
+                    </div>
+                    
+                    {/* Messages vides originaux */}
+                    <div className="text-center max-w-md pb-6">
                       <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
                         <Bot className="w-10 h-10 text-primary" />
                       </div>
