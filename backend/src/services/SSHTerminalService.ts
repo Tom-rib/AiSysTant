@@ -143,14 +143,22 @@ export class SSHTerminalService {
       // ✅ NOUVEAU: Si la commande commence par "cd", mettre à jour currentDir
       if (command.trim().startsWith('cd ')) {
         try {
-          // ✅ NOUVEAU: Exécuter "pwd" pour obtenir le nouveau répertoire courant
-          const pwdResult = await connection.client.execCommand('pwd', {
+          // ✅ CORRIGÉ: Exécuter "cd && pwd" pour vérifier que le cd a réussi
+          // Cela garantit que pwd sera exécuté DANS le nouveau répertoire si cd réussit
+          const pwdResult = await connection.client.execCommand(`${command} && pwd`, {
             cwd: connection.currentDir
           });
 
+          // ✅ CORRIGÉ: Vérifier que la commande a réussi (code 0)
           if (pwdResult.code === 0 && pwdResult.stdout) {
-            connection.currentDir = pwdResult.stdout.trim();
+            // ✅ CORRIGÉ: La dernière ligne de stdout est le chemin retourné par pwd
+            const lines = pwdResult.stdout.trim().split('\n');
+            const newDir = lines[lines.length - 1];
+            connection.currentDir = newDir;
             console.log(`[SSHTerminal] currentDir mis à jour: ${connection.currentDir}`);
+          } else {
+            // ✅ CORRIGÉ: Si cd a échoué, garder le répertoire courant et retourner l'erreur
+            console.log(`[SSHTerminal] cd a échoué, répertoire inchangé: ${connection.currentDir}`);
           }
         } catch (error) {
           console.error(`[SSHTerminal] Erreur lors de la mise à jour du répertoire:`, error);
