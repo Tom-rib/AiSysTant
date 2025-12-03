@@ -40,7 +40,7 @@ const httpServer = createServer(app);
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
-// Configuration de Socket.IO
+// ✅ CORRIGÉ: Configuration de Socket.IO sans middleware d'auth (on vérifie à la main dans setupTerminalSockets)
 const io = new SocketIOServer(httpServer, {
   cors: {
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
@@ -53,9 +53,11 @@ const io = new SocketIOServer(httpServer, {
         'http://192.168.136.149:3000',
         'http://172.18.0.1:5173',
         'http://172.18.0.1:3000',
+        'http://192.168.1.100:5173',
+        'http://192.168.1.100:3000',
       ];
       
-      // Accepter aussi si pas d'origin (serveur interne)
+      // Accepter aussi si pas d'origin (serveur interne) ou si c'est une IP locale
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
@@ -64,11 +66,14 @@ const io = new SocketIOServer(httpServer, {
       }
     },
     methods: ['GET', 'POST'],
-    credentials: true
+    credentials: true,
+    allowEIO3: true  // ✅ CORRIGÉ: Accepter EIO3 aussi
   } as any,
-  pingInterval: parseInt(process.env.WS_PING_INTERVAL || '30000'),
-  pingTimeout: parseInt(process.env.WS_PING_TIMEOUT || '5000'),
-  transports: ['websocket', 'polling']
+  pingInterval: parseInt(process.env.WS_PING_INTERVAL || '25000'),
+  pingTimeout: parseInt(process.env.WS_PING_TIMEOUT || '60000'),
+  transports: ['websocket', 'polling'],
+  allowUpgrades: true,
+  maxHttpBufferSize: 1e7
 });
 
 // ✅ NOUVEAU: Initialiser les sockets du terminal (FUSIONNE tous les handlers)

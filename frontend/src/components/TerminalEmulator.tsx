@@ -60,16 +60,20 @@ export default function TerminalEmulator({
       console.log(`[TerminalEmulator] Terminal ouvert dans DOM: ${sessionId}`);
 
       // ✅ CORRIGÉ: Attendre que le DOM soit complètement rendu AVANT fit()
+      // IMPORTANT: fitAddon.fit() doit être appelé APRÈS que xterm soit dans le DOM ET visible
       setTimeout(() => {
         try {
-          if (fitAddon && terminalRef.current?.offsetHeight) {
+          if (fitAddon && terminalRef.current?.offsetHeight && terminalRef.current?.offsetHeight > 0) {
             fitAddon.fit();
             console.log(`[TerminalEmulator] FitAddon appliqué: ${sessionId}`);
+          } else {
+            console.warn(`[TerminalEmulator] ⚠️ Dimensions non disponibles pour fitAddon: height=${terminalRef.current?.offsetHeight}`);
           }
         } catch (error) {
-          console.error(`[TerminalEmulator] Erreur fitAddon:`, error);
+          console.error(`[TerminalEmulator] Erreur fitAddon (non-bloquante):`, error);
+          // Ne pas crash si fitAddon échoue, le terminal marche quand même
         }
-      }, 100);
+      }, 200);
 
       // Afficher message initial
       term.writeln(`\x1B[1;32m$ Initialisation du terminal ${sessionId}\x1B[0m`);
