@@ -127,8 +127,8 @@ export default function Settings() {
               <SettingsIcon className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-text">Paramètres</h1>
-              <p className="text-text-light mt-1">Gérez vos configurations et clés API</p>
+              <h1 className="text-3xl font-bold text-text">Configuration IA</h1>
+              <p className="text-text-light mt-1">Configurez votre clé API Claude et vos préférences</p>
             </div>
           </div>
         </div>
