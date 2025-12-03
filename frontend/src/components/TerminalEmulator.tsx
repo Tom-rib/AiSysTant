@@ -230,10 +230,15 @@ export default function TerminalEmulator({
       );
 
       try {
+        console.log(
+          `[TerminalEmulator] 📤 EMIT terminal-input: ${sessionId}`, 
+          { input: data, socketConnected: socket.connected }
+        );
+
         socket.emit('terminal-input', { sessionId, input: data }, (result: any) => {
-          console.log(`[TerminalEmulator] Callback input: ${sessionId}`, result);
+          console.log(`[TerminalEmulator] ✅ Callback input: ${sessionId}`, result);
           if (!result?.success) {
-            console.error(`[TerminalEmulator] Erreur input: ${result?.error}`);
+            console.error(`[TerminalEmulator] ❌ Erreur input: ${result?.error}`);
           }
         });
       } catch (error) {
