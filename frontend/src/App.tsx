@@ -61,7 +61,7 @@ function App() {
               }
             />
             <Route
-              path="/ssh/help"
+              path="/ssh-help"
               element={
                 <PrivateRoute>
                   <SSHHelp />
