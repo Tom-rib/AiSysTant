@@ -217,6 +217,11 @@ export class TerminalSessionManager {
 
       console.log(`[TerminalSession] Fermeture: ${sessionId}`);
 
+      // ✅ CORRIGÉ: Nettoyer TOUS les listeners du stream AVANT de le fermer
+      session.stream.removeAllListeners('data');
+      session.stream.removeAllListeners('error');
+      session.stream.removeAllListeners('close');
+
       // ✅ NOUVEAU: Fermer le stream
       try {
         session.stream.end();

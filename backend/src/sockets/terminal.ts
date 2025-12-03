@@ -1,4 +1,5 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import { TerminalSessionManager } from '../services/TerminalSessionManager';
 import { SSHService } from '../services/SSHService';
 
@@ -12,7 +13,25 @@ export function setupTerminalSockets(io: SocketIOServer) {
 
   io.on('connection', (socket: Socket) => {
     const userId = (socket.handshake.auth as any).userId;
-    console.log(`[Socket] ✅ CONNECT: ${socket.id} (user: ${userId})`);
+    const token = (socket.handshake.auth as any).token;
+    
+    console.log(`[Socket] ✅ CONNECT: ${socket.id}`, { userId, token: !!token });
+
+    // ✅ CORRIGÉ: Si pas de userId, essayer de décoder le token
+    let finalUserId = userId;
+    if (!finalUserId && token) {
+      try {
+        const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+        finalUserId = decoded.id;
+        console.log(`[Socket] ✅ UserId décodé du token: ${finalUserId}`);
+      } catch (error) {
+        console.error(`[Socket] ❌ Erreur décodage token:`, error);
+      }
+    }
+
+    if (!finalUserId) {
+      console.error(`[Socket] ❌ Pas de userId trouvé!`);
+    }
 
     /**
      * ✅ NOUVEAU: Créer une nouvelle session de terminal
@@ -34,8 +53,8 @@ export function setupTerminalSockets(io: SocketIOServer) {
           return callback({ success: false, error: 'Serveur non trouvé' });
         }
 
-        if (server.user_id !== userId) {
-          console.error(`[Socket] ❌ Accès refusé pour user ${userId} au serveur ${serverId}`);
+        if (server.user_id !== finalUserId) {
+          console.error(`[Socket] ❌ Accès refusé pour user ${finalUserId} au serveur ${serverId}`);
           return callback({ success: false, error: 'Accès refusé' });
         }
 
@@ -45,7 +64,7 @@ export function setupTerminalSockets(io: SocketIOServer) {
           sessionId,
           socket.id,
           serverId,
-          userId,
+          finalUserId || 0,
           serverName
         );
 
