@@ -202,6 +202,11 @@ export default function TerminalEmulator({
       }
     };
 
+    // ✅ CORRIGÉ: Retirer TOUS les listeners précédents pour éviter les doublons
+    socket.off('terminal-output');
+    socket.off('terminal-error');
+    socket.off('terminal-closed');
+
     console.log(`[TerminalEmulator] Enregistrement listeners: ${sessionId}`);
     socket.on('terminal-output', handleTerminalOutput);
     socket.on('terminal-error', handleTerminalError);
