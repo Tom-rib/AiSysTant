@@ -21,36 +21,55 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
 
-  // ✅ NOUVEAU: Initialiser le socket UNE SEULE FOIS
+  // ✅ CORRIGÉ: Initialiser le socket UNE SEULE FOIS (avec useCallback pour l'authentification)
   useEffect(() => {
+    console.log('[MultiTerminal] useEffect: Initialisation Socket.io');
+    
+    if (socketRef.current) {
+      console.log('[MultiTerminal] Socket déjà initialisé, skip');
+      return;
+    }
+
     const token = localStorage.getItem('token');
     const userId = localStorage.getItem('userId');
 
-    // ✅ NOUVEAU: UN SEUL socket pour tous les onglets!
+    console.log('[MultiTerminal] Création Socket.io avec auth:', { token: !!token, userId });
+
+    // ✅ CORRIGÉ: UN SEUL socket pour tous les onglets!
     socketRef.current = io(window.location.origin, {
       auth: { token, userId },
       reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
     });
 
     socketRef.current.on('connect', () => {
-      console.log('[MultiTerminal] Socket connecté');
+      console.log('[MultiTerminal] Socket connecté:', socketRef.current?.id);
     });
 
     socketRef.current.on('disconnect', () => {
       console.log('[MultiTerminal] Socket déconnecté');
     });
 
+    socketRef.current.on('error', (error: any) => {
+      console.error('[MultiTerminal] Socket erreur:', error);
+    });
+
+    // Cleanup: déconnecter au unmount du composant
     return () => {
-      // ✅ NOUVEAU: NE PAS fermer le socket au unmount
-      // Il continuera à fonctionner pour les autres onglets
+      console.log('[MultiTerminal] Cleanup: Fermeture Socket.io');
+      // ✅ CORRIGÉ: NE PAS fermer le socket ici! Il continuera à fonctionner
     };
-  }, []);
+  }, []); // Vide! Une seule fois!
 
   /**
    * ✅ NOUVEAU: Ajouter un nouvel onglet de terminal
    */
   const addTerminal = (serverId: number, serverName: string) => {
     const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    console.log(`[MultiTerminal] addTerminal: ${sessionId} - ${serverName}`);
 
     // ✅ NOUVEAU: Ajouter l'onglet
     const newTab: TerminalTab = {
@@ -74,11 +93,11 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
    * ✅ NOUVEAU: Fermer un onglet
    */
   const closeTerminal = (sessionId: string) => {
-    console.log(`[MultiTerminal] Fermeture: ${sessionId}`);
+    console.log(`[MultiTerminal] closeTerminal: ${sessionId}`);
 
     // ✅ NOUVEAU: Notifier le backend
     if (socketRef.current) {
-      socketRef.current.emit('terminal-close', { sessionId }, (result: any) => {
+      socketRef.current.emit('close-terminal', { sessionId }, (result: any) => {
         console.log('[MultiTerminal] Terminal fermé:', result);
       });
     }
@@ -98,6 +117,8 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
    * ✅ NOUVEAU: Changer l'onglet actif
    */
   const switchTab = (sessionId: string) => {
+    console.log(`[MultiTerminal] switchTab: ${sessionId}`);
+    
     setTabs(prev =>
       prev.map(t => ({
         ...t,
@@ -164,17 +185,24 @@ export default function MultiTerminal({ servers }: MultiTerminalProps) {
           </div>
         ) : (
           tabs.map(tab => (
+            // ✅ CORRIGÉ: Garder le composant en DOM avec display: none (pas de démontage!)
             <div
               key={tab.sessionId}
-              className={`terminal-panel ${tab.isActive ? 'active' : ''}`}
+              className="terminal-panel"
+              style={{ 
+                display: tab.isActive ? 'flex' : 'none',
+                flexDirection: 'column',
+              }}
             >
-              {/* ✅ CORRIGÉ: Passer aussi le serverName */}
-              <TerminalEmulator
-                sessionId={tab.sessionId}
-                serverId={tab.serverId}
-                serverName={tab.serverName}
-                socket={socketRef.current!}
-              />
+              {/* ✅ CORRIGÉ: Passer le socket global et le serverName */}
+              {socketRef.current && (
+                <TerminalEmulator
+                  sessionId={tab.sessionId}
+                  serverId={tab.serverId}
+                  serverName={tab.serverName}
+                  socket={socketRef.current}
+                />
+              )}
             </div>
           ))
         )}
