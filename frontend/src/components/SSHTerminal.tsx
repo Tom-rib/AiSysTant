@@ -51,7 +51,7 @@ export default function SSHTerminal({ server, onDisconnect }: SSHTerminalProps) 
   const loadCurrentDir = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/ssh/current-dir/${server.id}`, {
+      const response = await fetch(`/api/ssh-terminal/current-dir/${server.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -103,7 +103,7 @@ export default function SSHTerminal({ server, onDisconnect }: SSHTerminalProps) 
       addMessage(command, 'command');
 
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/ssh/execute', {
+      const response = await fetch('/api/ssh-terminal/execute', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,15 +122,22 @@ export default function SSHTerminal({ server, onDisconnect }: SSHTerminalProps) 
         return;
       }
 
-      // ✅ NOUVEAU: Mettre à jour le répertoire courant
+      // ✅ CORRIGÉ: Mettre à jour le répertoire courant
       if (data.cwd) {
         setCurrentDir(data.cwd);
         console.log(`[SSHTerminal] currentDir mis à jour: ${data.cwd}`);
       }
 
+      // ✅ CORRIGÉ: Pour les commandes cd, nettoyer la sortie (enlever le pwd)
+      let outputToDisplay = data.stdout;
+      if (command.trim().startsWith('cd ')) {
+        // Si la commande était cd, ne pas afficher la sortie de pwd
+        outputToDisplay = '';
+      }
+
       // ✅ NOUVEAU: Afficher la sortie
-      if (data.stdout) {
-        addMessage(data.stdout, 'output');
+      if (outputToDisplay) {
+        addMessage(outputToDisplay, 'output');
       }
 
       if (data.stderr) {
@@ -175,7 +182,7 @@ export default function SSHTerminal({ server, onDisconnect }: SSHTerminalProps) 
   const handleDisconnect = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/ssh/disconnect', {
+      const response = await fetch('/api/ssh-terminal/disconnect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
