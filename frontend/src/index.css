@@ -25,11 +25,31 @@
   a { @apply text-cyan-400 hover:text-cyan-300 transition-colors; }
 }
 
-/* Page text overrides */
-.page-title { @apply text-2xl font-bold text-white; }
-.page-subtitle { @apply text-lg text-gray-300; }
-.section-title { @apply text-xl font-bold text-white; }
-.section-subtitle { @apply text-sm text-gray-400; }
+/* Navbar styling - KEEP BLACK */
+.navbar {
+  @apply bg-white text-slate-900 border-b border-gray-200;
+}
+
+.navbar h1, .navbar h2, .navbar h3, .navbar h4, .navbar h5, .navbar h6 {
+  @apply text-slate-900;
+}
+
+.navbar p, .navbar span, .navbar label, .navbar a {
+  @apply text-slate-700;
+}
+
+/* Page content - WHITE text outside cards */
+.page-content {
+  @apply text-white;
+}
+
+.page-content h1, .page-content h2, .page-content h3, .page-content h4, .page-content h5, .page-content h6 {
+  @apply text-white;
+}
+
+.page-content > p, .page-content > span, .page-content > label, .page-content > div > p, .page-content > div > span {
+  @apply text-gray-300;
+}
 
 @layer components {
   .btn { @apply px-4 py-3 rounded-lg font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-400; }
