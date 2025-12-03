@@ -53,9 +53,9 @@ export default {
           lighter: '#999999',
         },
         background: {
-          DEFAULT: '#F2FFF2',
-          light: '#FFFFFF',
-          dark: '#E8F5E8',
+          DEFAULT: '#0f172a',
+          light: '#1e293b',
+          dark: '#020617',
         },
       },
       fontFamily: {
