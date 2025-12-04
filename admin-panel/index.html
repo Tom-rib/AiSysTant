@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Chatops Commander</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+  <div id="root"></div>
+
+  <script>
+    const API_URL = 'http://192.168.136.149:3000'
+    const BACKEND_API = 'http://192.168.136.149:3001/api/admin'
+    
+    let token = localStorage.getItem('admin_token')
+    let currentUser = JSON.parse(localStorage.getItem('admin_user') || '{}')
+
+    // HTML Pages
+    const loginPage = `
+      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-96">
+          <h1 class="text-3xl font-bold mb-8 text-center">🛡️ Admin Panel</h1>
+          <form id="loginForm" class="space-y-4">
+            <input type="email" id="email" placeholder="Email" class="w-full px-4 py-2 bg-gray-700 rounded border border-gray-600" required>
+            <input type="password" id="password" placeholder="Mot de passe" class="w-full px-4 py-2 bg-gray-700 rounded border border-gray-600" required>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-bold">Connexion</button>
+            <div id="error" class="text-red-500 text-sm hidden"></div>
+          </form>
+        </div>
+      </div>
+    `
+
+    const dashboardPage = `
+      <div class="min-h-screen bg-gray-900">
+        <nav class="bg-gray-800 border-b border-gray-700 p-4 flex justify-between items-center">
+          <h1 class="text-2xl font-bold">🛡️ Admin Panel</h1>
+          <div class="flex items-center gap-4">
+            <span>${currentUser.email}</span>
+            <button onclick="logout()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Logout</button>
+          </div>
+        </nav>
+
+        <div class="p-8">
+          <div class="grid grid-cols-4 gap-4 mb-8">
+            <div class="bg-gray-800 p-6 rounded-lg">
+              <p class="text-gray-400 mb-2">Total Users</p>
+              <p id="totalUsers" class="text-3xl font-bold">-</p>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-lg">
+              <p class="text-gray-400 mb-2">Active Users</p>
+              <p id="activeUsers" class="text-3xl font-bold">-</p>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-lg">
+              <p class="text-gray-400 mb-2">Monthly Revenue</p>
+              <p id="monthlyRevenue" class="text-3xl font-bold">-</p>
+            </div>
+            <div class="bg-gray-800 p-6 rounded-lg">
+              <p class="text-gray-400 mb-2">Total Servers</p>
+              <p id="totalServers" class="text-3xl font-bold">-</p>
+            </div>
+          </div>
+
+          <div class="bg-gray-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold mb-4">Gestion des Utilisateurs</h2>
+            <div id="usersList" class="space-y-2">
+              <p class="text-gray-400">Chargement...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `
+
+    // Functions
+    async function login(email, password) {
+      try {
+        const response = await axios.post(`${API_URL}/api/login`, { email, password })
+        token = response.data.data.token
+        currentUser = response.data.data.user
+        localStorage.setItem('admin_token', token)
+        localStorage.setItem('admin_user', JSON.stringify(currentUser))
+        render()
+      } catch (error) {
+        document.getElementById('error').textContent = error.response?.data?.message || 'Erreur de connexion'
+        document.getElementById('error').classList.remove('hidden')
+      }
+    }
+
+    function logout() {
+      token = null
+      currentUser = {}
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_user')
+      render()
+    }
+
+    async function loadStats() {
+      try {
+        const response = await axios.get(`${BACKEND_API}/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        document.getElementById('totalUsers').textContent = response.data.totalUsers
+        document.getElementById('activeUsers').textContent = response.data.activeUsers
+        document.getElementById('monthlyRevenue').textContent = '€' + response.data.monthlyRevenue.toFixed(2)
+        document.getElementById('totalServers').textContent = response.data.totalServers
+      } catch (error) {
+        console.error('Erreur:', error)
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const response = await axios.get(`${BACKEND_API}/users?limit=10`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        const html = response.data.users.map(u => `
+          <div class="bg-gray-700 p-4 rounded flex justify-between items-center">
+            <div>
+              <p class="font-bold">${u.email}</p>
+              <p class="text-sm text-gray-400">${u.plan || 'N/A'}</p>
+            </div>
+            <span class="text-sm ${u.status === 'active' ? 'text-green-400' : 'text-red-400'}">${u.status}</span>
+          </div>
+        `).join('')
+        document.getElementById('usersList').innerHTML = html || '<p class="text-gray-400">Aucun utilisateur</p>'
+      } catch (error) {
+        console.error('Erreur:', error)
+      }
+    }
+
+    function render() {
+      const root = document.getElementById('root')
+      if (token) {
+        root.innerHTML = dashboardPage
+        loadStats()
+        loadUsers()
+      } else {
+        root.innerHTML = loginPage
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+          e.preventDefault()
+          login(
+            document.getElementById('email').value,
+            document.getElementById('password').value
+          )
+        })
+      }
+    }
+
+    // Restore session
+    if (token) {
+      render()
+    } else {
+      render()
+    }
+  </script>
+</body>
+</html>

@@ -25,6 +25,7 @@ export default function SSH() {
   const navigate = useNavigate()
   
   const [servers, setServers] = useState<SSHServer[]>([])
+  const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [isAddingServer, setIsAddingServer] = useState(false)
   const [showGroupManager, setShowGroupManager] = useState(false)
@@ -43,6 +44,7 @@ export default function SSH() {
     username: '',
     password: '',
     privateKey: '',
+    groupId: 0,
   })
 
   // Charger l'état des sessions depuis localStorage
@@ -87,6 +89,21 @@ export default function SSH() {
       setLoading(false)
     }
   }
+
+  const loadGroups = async () => {
+    try {
+      const response = await groupsAPI.list()
+      setGroups(response.data || [])
+    } catch (error) {
+      console.error('Erreur chargement groupes:', error)
+      setGroups([])
+    }
+  }
+
+  useEffect(() => {
+    loadServers()
+    loadGroups()
+  }, [])
 
   const handleAddServer = async () => {
     try {

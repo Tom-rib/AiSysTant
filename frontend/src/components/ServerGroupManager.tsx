@@ -63,8 +63,8 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       setServerGroups(map)
       setError('')
     } catch (err: any) {
-      console.error('Error loading groups:', err)
-      setError('Failed to load groups')
+      console.error('Erreur chargement groupes:', err)
+      setError('Erreur lors du chargement des groupes')
       try {
         const saved = localStorage.getItem('serverGroups')
         if (saved) {
@@ -72,7 +72,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
           setGroups(parsed)
         }
       } catch (e) {
-        console.error('Error loading from localStorage:', e)
+        console.error('Erreur chargement localStorage:', e)
       }
     } finally {
       setLoading(false)
@@ -105,8 +105,8 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       setShowCreateModal(false)
       await loadGroups()
     } catch (err: any) {
-      console.error('Error creating group:', err)
-      const errorMsg = err.response?.data?.error || err.message || 'Failed to create group'
+      console.error('Erreur création groupe:', err)
+      const errorMsg = err.response?.data?.error || err.message || 'Erreur lors de la création du groupe'
       setError(errorMsg)
     } finally {
       setIsSubmitting(false)
@@ -135,8 +135,8 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       setServerGroups(newServerGroups)
       setError('')
     } catch (err: any) {
-      console.error('Error deleting group:', err)
-      setError(err.response?.data?.error || 'Failed to delete group')
+      console.error('Erreur suppression groupe:', err)
+      setError(err.response?.data?.error || 'Erreur lors de la suppression')
     } finally {
       setIsSubmitting(false)
     }
@@ -169,8 +169,8 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       localStorage.setItem('serverGroups', JSON.stringify(newGroups))
       setError('')
     } catch (err: any) {
-      console.error('Error adding server to group:', err)
-      setError(err.response?.data?.error || 'Failed to add server')
+      console.error('Erreur ajout serveur au groupe:', err)
+      setError(err.response?.data?.error || 'Erreur lors de l\'ajout du serveur')
     }
   }
 
@@ -198,8 +198,8 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       localStorage.setItem('serverGroups', JSON.stringify(newGroups))
       setError('')
     } catch (err: any) {
-      console.error('Error removing server from group:', err)
-      setError(err.response?.data?.error || 'Failed to remove server')
+      console.error('Erreur suppression serveur du groupe:', err)
+      setError(err.response?.data?.error || 'Erreur lors de la suppression')
     }
   }
 
@@ -308,9 +308,9 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
                             e.target.value = ''
                           }
                         }}
-                        className="w-full px-2 py-1 text-sm rounded bg-white bg-opacity-20 text-white mb-2"
+                        className="w-full px-2 py-1 text-sm rounded bg-gray-100 text-gray-900 mb-2 font-medium border border-gray-300"
                       >
-                        <option value="">+ Ajouter serveur...</option>
+                        <option value="">+ Ajouter un serveur...</option>
                         {servers
                           .filter(s => !group.servers?.includes(s.id))
                           .map(s => (
