@@ -21,15 +21,6 @@ interface TerminalSession {
   isConnected: boolean
 }
 
-interface ServerGroup {
-  id?: number
-  name: string
-  icon: string
-  color: string
-  description?: string
-  servers?: number[]
-}
-
 export default function SSH() {
   const navigate = useNavigate()
   
