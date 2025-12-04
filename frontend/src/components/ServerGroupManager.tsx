@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit2, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
 import axios from 'axios'
 
 interface ServerGroup {
@@ -43,7 +43,6 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
     description: ''
   })
 
-  // Load groups from backend
   useEffect(() => {
     loadGroups()
   }, [])
@@ -55,7 +54,6 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       const groupsData = response.data || []
       setGroups(groupsData)
       
-      // Build serverGroups map
       const map: Record<number, number> = {}
       groupsData.forEach((g: ServerGroup) => {
         g.servers?.forEach(serverId => {
@@ -67,7 +65,6 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
     } catch (err: any) {
       console.error('Error loading groups:', err)
       setError('Failed to load groups')
-      // Fallback to localStorage
       try {
         const saved = localStorage.getItem('serverGroups')
         if (saved) {
@@ -101,6 +98,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       const updatedGroups = [...groups, newGroup]
       setGroups(updatedGroups)
       onGroupsChange(updatedGroups)
+      localStorage.setItem('serverGroups', JSON.stringify(updatedGroups))
       
       setFormData({ name: '', icon: '🚀', color: 'blue', description: '' })
       setShowCreateModal(false)
@@ -124,6 +122,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       const newGroups = groups.filter(g => g.id !== groupId)
       setGroups(newGroups)
       onGroupsChange(newGroups)
+      localStorage.setItem('serverGroups', JSON.stringify(newGroups))
 
       const newServerGroups = { ...serverGroups }
       Object.keys(newServerGroups).forEach(serverId => {
@@ -145,9 +144,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
     if (!groupId) return
 
     try {
-      await axios.post(`/api/server-groups/${groupId}/servers`, {
-        serverId
-      })
+      await axios.post(`/api/server-groups/${groupId}/servers`, { serverId })
 
       const newServerGroups = { ...serverGroups }
       newServerGroups[serverId] = groupId
@@ -167,6 +164,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       })
       setGroups(newGroups)
       onGroupsChange(newGroups)
+      localStorage.setItem('serverGroups', JSON.stringify(newGroups))
       setError('')
     } catch (err: any) {
       console.error('Error adding server to group:', err)
@@ -195,6 +193,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       })
       setGroups(newGroups)
       onGroupsChange(newGroups)
+      localStorage.setItem('serverGroups', JSON.stringify(newGroups))
       setError('')
     } catch (err: any) {
       console.error('Error removing server from group:', err)
@@ -231,14 +230,12 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
 
   return (
     <div className="w-full">
-      {/* Error Message */}
       {error && (
         <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-white">Groupes de Serveurs</h3>
         <button
@@ -251,7 +248,6 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
         </button>
       </div>
 
-      {/* Loading State */}
       {loading ? (
         <div className="flex items-center justify-center p-8">
           <div className="text-center">
@@ -261,16 +257,14 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
         </div>
       ) : (
         <>
-          {/* Groups List */}
           <div className="space-y-2 mb-4">
             {groups.length === 0 ? (
               <div className="p-4 bg-gray-700 text-gray-300 rounded-lg text-center text-sm">
                 Aucun groupe créé. Créez votre premier groupe pour organiser vos serveurs.
               </div>
             ) : (
-              groups.map((group) => (
+              groups.map(group => (
                 <div key={group.id} className={`rounded-lg border-2 ${getColorClass(group.color)}`}>
-                  {/* Group Header */}
                   <div
                     onClick={() => toggleGroupExpanded(group.id)}
                     className="flex items-center justify-between p-3 cursor-pointer hover:opacity-80 transition"
@@ -292,14 +286,6 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                        }}
-                        className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
                           handleDeleteGroup(group.id)
                         }}
                         className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
@@ -309,7 +295,6 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
                     </div>
                   </div>
 
-                  {/* Group Servers */}
                   {expandedGroups.has(group.id!) && (
                     <div className="border-t-2 border-current opacity-30 px-3 py-2">
                       <select
@@ -360,7 +345,6 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
             )}
           </div>
 
-          {/* Ungrouped Servers */}
           {ungroupedServers.length > 0 && (
             <div className="rounded-lg border-2 border-gray-400 bg-gray-100 text-gray-800 p-3">
               <div className="font-bold mb-2">📋 Sans groupe ({ungroupedServers.length})</div>
@@ -376,7 +360,6 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
         </>
       )}
 
-      {/* Create Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96 text-slate-900">
@@ -451,9 +434,10 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
                 </button>
                 <button
                   onClick={handleCreateGroup}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
                 >
-                  Créer
+                  {isSubmitting ? 'Création...' : 'Créer'}
                 </button>
               </div>
             </div>
