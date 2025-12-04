@@ -86,7 +86,7 @@ app.use('/api/admin', async (req: Request, res: Response) => {
   }
 })
 
-app.listen(ADMIN_PORT, () => {
+app.listen(ADMIN_PORT, '0.0.0.0', () => {
   console.log(`✅ Admin Panel running on http://0.0.0.0:${ADMIN_PORT}`)
   console.log(`📡 Access at: http://192.168.136.149:${ADMIN_PORT}`)
 })
