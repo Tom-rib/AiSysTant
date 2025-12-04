@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
-import axios from 'axios'
+import { groupsAPI } from '../services/api'
 
 interface ServerGroup {
   id?: number
@@ -50,7 +50,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
   const loadGroups = async () => {
     try {
       setLoading(true)
-      const response = await axios.get('/api/server-groups')
+      const response = await groupsAPI.list()
       const groupsData = response.data || []
       setGroups(groupsData)
       
@@ -87,7 +87,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
 
     try {
       setIsSubmitting(true)
-      const response = await axios.post('/api/server-groups', {
+      const response = await groupsAPI.create({
         name: formData.name,
         icon: formData.icon,
         color: formData.color,
@@ -117,7 +117,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
 
     try {
       setIsSubmitting(true)
-      await axios.delete(`/api/server-groups/${groupId}`)
+      await groupsAPI.delete(groupId)
       
       const newGroups = groups.filter(g => g.id !== groupId)
       setGroups(newGroups)
@@ -144,7 +144,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
     if (!groupId) return
 
     try {
-      await axios.post(`/api/server-groups/${groupId}/servers`, { serverId })
+      await groupsAPI.addServer(groupId, serverId)
 
       const newServerGroups = { ...serverGroups }
       newServerGroups[serverId] = groupId
@@ -176,7 +176,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
     if (!groupId) return
 
     try {
-      await axios.delete(`/api/server-groups/${groupId}/servers/${serverId}`)
+      await groupsAPI.removeServer(groupId, serverId)
 
       const newServerGroups = { ...serverGroups }
       delete newServerGroups[serverId]
@@ -341,7 +341,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
                     </div>
                   )}
                 </div>
-              ))
+              )
             )}
           </div>
 

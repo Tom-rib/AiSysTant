@@ -100,4 +100,23 @@ export const statsAPI = {
     api.get(`/stats/activity?limit=${limit}`),
 }
 
+export const groupsAPI = {
+  list: () => api.get('/server-groups'),
+  
+  create: (group: { name: string; icon: string; color: string; description?: string }) =>
+    api.post('/server-groups', group),
+  
+  update: (groupId: number, group: { name?: string; icon?: string; color?: string; description?: string }) =>
+    api.put(`/server-groups/${groupId}`, group),
+  
+  delete: (groupId: number) =>
+    api.delete(`/server-groups/${groupId}`),
+  
+  addServer: (groupId: number, serverId: number) =>
+    api.post(`/server-groups/${groupId}/servers`, { serverId }),
+  
+  removeServer: (groupId: number, serverId: number) =>
+    api.delete(`/server-groups/${groupId}/servers/${serverId}`),
+}
+
 export default api
