@@ -6,6 +6,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import { createServer } from 'http';
 import rateLimit from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
+import path from 'path';
 
 // Configuration
 dotenv.config();
@@ -135,6 +136,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Serve admin panel HTML
+app.get('/admin-panel', (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, '../../admin-panel/index.html'))
+});
+
 // Routes
 app.get('/', (req: Request, res: Response) => {
   res.json({
@@ -145,7 +151,9 @@ app.get('/', (req: Request, res: Response) => {
       chat: '/api/chat',
       ssh: '/api/ssh',
       stats: '/api/stats',
-      health: '/api/health'
+      admin: '/api/admin',
+      health: '/api/health',
+      adminPanel: '/admin-panel'
     }
   });
 });
