@@ -336,7 +336,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
                               </button>
                             </div>
                           )
-                        }))}
+                        })}
                       </div>
                     </div>
                   )}
