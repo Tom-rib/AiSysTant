@@ -66,7 +66,7 @@ function App() {
             />
             <Route 
               path="/pricing" 
-              element={!isAuthenticated ? <Pricing /> : <Navigate to="/pricing" />} 
+              element={<Pricing />} 
             />
 
             {/* Protected routes */}
@@ -75,14 +75,6 @@ function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/pricing"
-              element={
-                <PrivateRoute>
-                  <Pricing />
                 </PrivateRoute>
               }
             />
