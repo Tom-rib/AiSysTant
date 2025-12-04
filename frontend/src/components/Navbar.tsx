@@ -6,7 +6,8 @@ import {
   Menu,
   X,
   Key,
-  CreditCard
+  CreditCard,
+  DollarSign
 } from 'lucide-react'
 import { useState } from 'react'
 import logo from '../../public/logo-192.png'
@@ -20,6 +21,7 @@ export default function Navbar() {
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/chat', label: 'Chat IA', icon: MessageSquare },
     { path: '/ssh', label: 'SSH', icon: Terminal },
+    { path: '/pricing', label: 'Tarification', icon: DollarSign },
     { path: '/api-keys', label: 'Clé API', icon: Key },
     { path: '/billing', label: 'Facturation', icon: CreditCard },
   ]

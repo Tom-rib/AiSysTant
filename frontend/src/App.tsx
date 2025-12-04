@@ -42,7 +42,7 @@ function App() {
   const location = useLocation()
   
   // Déterminer quelle navbar afficher
-  const isPublicPage = ['/', '/login', '/register'].includes(location.pathname)
+  const isPublicPage = ['/', '/login', '/register', '/pricing'].includes(location.pathname) && !isAuthenticated
 
   return (
     <SSHProvider>
@@ -66,7 +66,7 @@ function App() {
             />
             <Route 
               path="/pricing" 
-              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Pricing />} 
+              element={!isAuthenticated ? <Pricing /> : <Navigate to="/pricing" />} 
             />
 
             {/* Protected routes */}
