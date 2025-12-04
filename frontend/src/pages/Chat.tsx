@@ -46,13 +46,18 @@ export default function Chat() {
   const [activeTab, setActiveTab] = useState<'conversations' | 'guide'>('conversations')
   const [servers, setServers] = useState<SSHServer[]>([])
   const [selectedServerId, setSelectedServerId] = useState<number>()
+  const [showNewConvModal, setShowNewConvModal] = useState(false)
+  const [newConvTitle, setNewConvTitle] = useState('')
+  const [newConvGroupId, setNewConvGroupId] = useState<number>()
+  const [serverGroups, setServerGroups] = useState<any[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const messages = currentConversationId ? getMessagesForConversation(currentConversationId) : []
 
   useEffect(() => {
-    // Load servers
+    // Load servers and server groups
     loadServers()
+    loadServerGroups()
     
     if (conversations.length === 0) {
       loadConversations()
@@ -84,6 +89,17 @@ export default function Chat() {
     } catch (error) {
       console.error('Error loading servers:', error)
       setServers([])
+    }
+  }
+
+  const loadServerGroups = async () => {
+    try {
+      const response = await sshAPI.getServerGroups?.() || { data: { data: [] } }
+      const groups = response.data?.data || response.data?.groups || []
+      setServerGroups(Array.isArray(groups) ? groups : [])
+    } catch (error) {
+      console.error('Error loading server groups:', error)
+      setServerGroups([])
     }
   }
 
@@ -137,13 +153,24 @@ export default function Chat() {
 
   const createNewConversation = async () => {
     try {
-      const response = await chatAPI.createConversation('Nouvelle conversation')
+      const title = newConvTitle.trim() || 'Nouvelle conversation'
+      const response = await chatAPI.createConversation(title)
       const newConv = response.data.data
       
       if (newConv?.id) {
-        addConversation(newConv)
+        const convWithGroup = {
+          ...newConv,
+          server_group_id: newConvGroupId,
+          server_group_name: serverGroups.find(g => g.id === newConvGroupId)?.name
+        }
+        addConversation(convWithGroup)
         setCurrentConversationId(newConv.id)
         setMessagesForConversation(newConv.id, [])
+        
+        // Reset modal
+        setShowNewConvModal(false)
+        setNewConvTitle('')
+        setNewConvGroupId(undefined)
       }
     } catch (error) {
       console.error('Erreur lors de la création de la conversation:', error)
@@ -256,7 +283,7 @@ export default function Chat() {
           <div className="p-4 border-b border-gray-200 space-y-2">
             {/* ✅ NOUVEAU: Bouton nouvelle conversation */}
             <button
-              onClick={createNewConversation}
+              onClick={() => setShowNewConvModal(true)}
               className="w-full btn-primary flex items-center justify-center space-x-2"
             >
               <Plus className="w-5 h-5" />
@@ -317,6 +344,11 @@ export default function Chat() {
                             <p className="text-sm font-medium text-text truncate">
                               {conv.title}
                             </p>
+                            {conv.server_group_name && (
+                              <p className="text-xs bg-primary-50 text-primary px-2 py-0.5 rounded inline-block mt-1">
+                                🖥️ {conv.server_group_name}
+                              </p>
+                            )}
                             <p className="text-xs text-text-light mt-1">
                               {new Date(conv.created_at).toLocaleString('fr-FR', {
                                 day: 'numeric',
@@ -489,6 +521,65 @@ export default function Chat() {
           )}
         </div>
       </div>
+
+      {/* Modal Nouvelle Conversation */}
+      {showNewConvModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
+            <h2 className="text-2xl font-bold text-text mb-4">Nouvelle conversation</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-text mb-2">Nom de la conversation *</label>
+                <input
+                  type="text"
+                  value={newConvTitle}
+                  onChange={(e) => setNewConvTitle(e.target.value)}
+                  placeholder="Ex: Configuration nginx"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-text mb-2">Groupe de serveurs</label>
+                <select
+                  value={newConvGroupId || ''}
+                  onChange={(e) => setNewConvGroupId(e.target.value ? parseInt(e.target.value) : undefined)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">-- Sélectionnez un groupe --</option>
+                  {serverGroups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.icon} {group.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowNewConvModal(false)
+                  setNewConvTitle('')
+                  setNewConvGroupId(undefined)
+                }}
+                className="flex-1 px-4 py-2 bg-gray-200 text-text rounded-lg hover:bg-gray-300 transition font-medium"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={createNewConversation}
+                disabled={!newConvTitle.trim()}
+                className="flex-1 px-4 py-2 btn-primary rounded-lg disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              >
+                Créer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

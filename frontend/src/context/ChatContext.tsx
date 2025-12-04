@@ -17,6 +17,8 @@ interface Conversation {
   user_id: number
   message_count?: number
   last_message_at?: string
+  server_group_id?: number
+  server_group_name?: string
 }
 
 interface ChatContextType {
