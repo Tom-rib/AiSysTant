@@ -5,6 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec ts-node src/server.ts",
+    "admin": "ADMIN_PORT=3002 BACKEND_URL=http://localhost:3001 ts-node src/admin-api-server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "jest",
