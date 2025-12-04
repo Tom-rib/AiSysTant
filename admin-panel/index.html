@@ -236,7 +236,13 @@
         
         console.log('Response:', response)
         
-        const { token: newToken, user } = response.data
+        // La réponse a une structure: { success, message, data: { user, token } }
+        const { token: newToken, user } = response.data || response
+        
+        if (!newToken || !user) {
+          showError('Réponse de serveur invalide')
+          return
+        }
         
         // Vérifier que c'est un admin
         if (user.role !== 'admin' && user.role !== 'super_admin') {
