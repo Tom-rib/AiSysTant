@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react'
+import axios from 'axios'
 
 interface ServerGroup {
   id?: number
@@ -31,7 +32,10 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingGroup, setEditingGroup] = useState<ServerGroup | null>(null)
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set())
-  const [serverGroups, setServerGroups] = useState<Record<number, number>>({}) // serverId -> groupId
+  const [serverGroups, setServerGroups] = useState<Record<number, number>>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -40,109 +44,163 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
     description: ''
   })
 
-  // Load groups from localStorage
+  // Load groups from backend
   useEffect(() => {
-    const saved = localStorage.getItem('serverGroups')
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        setGroups(parsed)
-        // Build serverGroups map
-        const map: Record<number, number> = {}
-        parsed.forEach((g: ServerGroup, idx: number) => {
-          g.servers?.forEach(serverId => {
-            map[serverId] = idx
-          })
-        })
-        setServerGroups(map)
-      } catch (e) {
-        console.error('Error loading groups:', e)
-      }
-    }
+    loadGroups()
   }, [])
 
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem('serverGroups', JSON.stringify(groups))
-    onGroupsChange(groups)
-  }, [groups])
+  const loadGroups = async () => {
+    try {
+      setLoading(true)
+      const response = await axios.get('/api/server-groups')
+      const groupsData = response.data || []
+      setGroups(groupsData)
+      
+      // Build serverGroups map
+      const map: Record<number, number> = {}
+      groupsData.forEach((g: ServerGroup) => {
+        g.servers?.forEach(serverId => {
+          map[serverId] = g.id!
+        })
+      })
+      setServerGroups(map)
+      setError('')
+    } catch (err: any) {
+      console.error('Error loading groups:', err)
+      setError('Failed to load groups')
+      // Fallback to localStorage
+      try {
+        const saved = localStorage.getItem('serverGroups')
+        if (saved) {
+          const parsed = JSON.parse(saved)
+          setGroups(parsed)
+        }
+      } catch (e) {
+        console.error('Error loading from localStorage:', e)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     if (!formData.name.trim()) {
       alert('Entrez un nom pour le groupe')
       return
     }
 
-    const newGroup: ServerGroup = {
-      id: Date.now(),
-      ...formData,
-      servers: []
-    }
+    try {
+      setIsSubmitting(true)
+      const response = await axios.post('/api/server-groups', {
+        name: formData.name,
+        icon: formData.icon,
+        color: formData.color,
+        description: formData.description
+      })
 
-    setGroups([...groups, newGroup])
-    setFormData({ name: '', icon: '🚀', color: 'blue', description: '' })
-    setShowCreateModal(false)
+      const newGroup = response.data
+      const updatedGroups = [...groups, newGroup]
+      setGroups(updatedGroups)
+      onGroupsChange(updatedGroups)
+      
+      setFormData({ name: '', icon: '🚀', color: 'blue', description: '' })
+      setShowCreateModal(false)
+      setError('')
+    } catch (err: any) {
+      console.error('Error creating group:', err)
+      setError(err.response?.data?.error || 'Failed to create group')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleDeleteGroup = (groupId: number | undefined) => {
+  const handleDeleteGroup = async (groupId: number | undefined) => {
     if (!groupId) return
     if (!confirm('Supprimer ce groupe?')) return
 
-    const newGroups = groups.filter(g => g.id !== groupId)
-    setGroups(newGroups)
+    try {
+      setIsSubmitting(true)
+      await axios.delete(`/api/server-groups/${groupId}`)
+      
+      const newGroups = groups.filter(g => g.id !== groupId)
+      setGroups(newGroups)
+      onGroupsChange(newGroups)
 
-    // Remove servers from this group
-    const newServerGroups = { ...serverGroups }
-    Object.keys(newServerGroups).forEach(serverId => {
-      if (newServerGroups[parseInt(serverId)] === groupId) {
-        delete newServerGroups[parseInt(serverId)]
-      }
-    })
-    setServerGroups(newServerGroups)
-  }
-
-  const handleAddServerToGroup = (serverId: number, groupId: number | undefined) => {
-    if (!groupId) return
-
-    const newServerGroups = { ...serverGroups }
-    newServerGroups[serverId] = groupId
-
-    setServerGroups(newServerGroups)
-
-    // Update groups
-    const newGroups = groups.map(g => {
-      if (g.id === groupId) {
-        return {
-          ...g,
-          servers: Array.from(new Set([...(g.servers || []), serverId]))
+      const newServerGroups = { ...serverGroups }
+      Object.keys(newServerGroups).forEach(serverId => {
+        if (newServerGroups[parseInt(serverId)] === groupId) {
+          delete newServerGroups[parseInt(serverId)]
         }
-      }
-      return {
-        ...g,
-        servers: (g.servers || []).filter(id => id !== serverId)
-      }
-    })
-    setGroups(newGroups)
+      })
+      setServerGroups(newServerGroups)
+      setError('')
+    } catch (err: any) {
+      console.error('Error deleting group:', err)
+      setError(err.response?.data?.error || 'Failed to delete group')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleRemoveServerFromGroup = (serverId: number, groupId: number | undefined) => {
+  const handleAddServerToGroup = async (serverId: number, groupId: number | undefined) => {
     if (!groupId) return
 
-    const newServerGroups = { ...serverGroups }
-    delete newServerGroups[serverId]
-    setServerGroups(newServerGroups)
+    try {
+      await axios.post(`/api/server-groups/${groupId}/servers`, {
+        serverId
+      })
 
-    // Update groups
-    const newGroups = groups.map(g => {
-      if (g.id === groupId) {
+      const newServerGroups = { ...serverGroups }
+      newServerGroups[serverId] = groupId
+      setServerGroups(newServerGroups)
+
+      const newGroups = groups.map(g => {
+        if (g.id === groupId) {
+          return {
+            ...g,
+            servers: Array.from(new Set([...(g.servers || []), serverId]))
+          }
+        }
         return {
           ...g,
           servers: (g.servers || []).filter(id => id !== serverId)
         }
-      }
-      return g
-    })
-    setGroups(newGroups)
+      })
+      setGroups(newGroups)
+      onGroupsChange(newGroups)
+      setError('')
+    } catch (err: any) {
+      console.error('Error adding server to group:', err)
+      setError(err.response?.data?.error || 'Failed to add server')
+    }
+  }
+
+  const handleRemoveServerFromGroup = async (serverId: number, groupId: number | undefined) => {
+    if (!groupId) return
+
+    try {
+      await axios.delete(`/api/server-groups/${groupId}/servers/${serverId}`)
+
+      const newServerGroups = { ...serverGroups }
+      delete newServerGroups[serverId]
+      setServerGroups(newServerGroups)
+
+      const newGroups = groups.map(g => {
+        if (g.id === groupId) {
+          return {
+            ...g,
+            servers: (g.servers || []).filter(id => id !== serverId)
+          }
+        }
+        return g
+      })
+      setGroups(newGroups)
+      onGroupsChange(newGroups)
+      setError('')
+    } catch (err: any) {
+      console.error('Error removing server from group:', err)
+      setError(err.response?.data?.error || 'Failed to remove server')
+    }
   }
 
   const toggleGroupExpanded = (groupId: number | undefined) => {
@@ -174,21 +232,44 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
 
   return (
     <div className="w-full">
+      {/* Error Message */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-white">Groupes de Serveurs</h3>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+          disabled={isSubmitting}
+          className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
         >
           <Plus size={18} />
           Créer groupe
         </button>
       </div>
 
-      {/* Groups List */}
-      <div className="space-y-2 mb-4">
-        {groups.map((group) => (
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-400">Chargement des groupes...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Groups List */}
+          <div className="space-y-2 mb-4">
+            {groups.length === 0 ? (
+              <div className="p-4 bg-gray-700 text-gray-300 rounded-lg text-center text-sm">
+                Aucun groupe créé. Créez votre premier groupe pour organiser vos serveurs.
+              </div>
+            ) : (
+              groups.map((group) => (
           <div key={group.id} className={`rounded-lg border-2 ${getColorClass(group.color)}`}>
             {/* Group Header */}
             <div

@@ -20,6 +20,8 @@ import settingsRoutes from './routes/settings';
 import sshTerminalRoutes from './routes/ssh-terminal';
 // ✅ NOUVEAU: Importer les routes du shell SSH persistant
 import sshShellRoutes from './routes/ssh-shell';
+// ✅ NOUVEAU: Importer les routes des groupes de serveurs
+import serverGroupsRoutes from './routes/server-groups';
 // ✅ NOUVEAU: Importer les handlers Socket.io pour le terminal
 import { setupTerminalSockets } from './sockets/terminal';
 
@@ -185,6 +187,8 @@ app.use('/api/ssh', sshRoutes);
 app.use('/api/ssh-terminal', sshTerminalRoutes);
 // ✅ NOUVEAU: Routes du shell SSH persistant
 app.use('/api/ssh-shell', sshShellRoutes);
+// ✅ NOUVEAU: Routes des groupes de serveurs
+app.use('/api/server-groups', serverGroupsRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/settings', settingsRoutes);
 
