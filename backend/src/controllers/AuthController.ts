@@ -120,12 +120,16 @@ export class AuthController {
       // Générer un token
       const token = generateToken(user.id, user.username, user.email, user.role);
 
-      // Stocker la session dans Redis
-      await redisUtils.setSession(user.id.toString(), {
-        username: user.username,
-        email: user.email,
-        role: user.role
-      });
+      // Stocker la session dans Redis (non-bloquant, c'est OK si ça échoue)
+      try {
+        await redisUtils.setSession(user.id.toString(), {
+          username: user.username,
+          email: user.email,
+          role: user.role
+        });
+      } catch (redisError) {
+        console.warn('⚠️ Redis session save failed (continuing without cache):', (redisError as any).message);
+      }
 
       return res.json({
         success: true,
