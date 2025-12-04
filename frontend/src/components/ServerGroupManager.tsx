@@ -30,7 +30,6 @@ const COLORS = ['red', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'g
 export default function ServerGroupManager({ servers, onGroupsChange }: ServerGroupManagerProps) {
   const [groups, setGroups] = useState<ServerGroup[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [editingGroup, setEditingGroup] = useState<ServerGroup | null>(null)
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set())
   const [serverGroups, setServerGroups] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(true)
@@ -270,109 +269,111 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
               </div>
             ) : (
               groups.map((group) => (
-          <div key={group.id} className={`rounded-lg border-2 ${getColorClass(group.color)}`}>
-            {/* Group Header */}
-            <div
-              onClick={() => toggleGroupExpanded(group.id)}
-              className="flex items-center justify-between p-3 cursor-pointer hover:opacity-80 transition"
-            >
-              <div className="flex items-center gap-2">
-                {expandedGroups.has(group.id!) ? (
-                  <ChevronDown size={18} />
-                ) : (
-                  <ChevronRight size={18} />
-                )}
-                <span className="text-2xl">{group.icon}</span>
-                <div>
-                  <div className="font-bold">{group.name}</div>
-                  {group.description && <div className="text-xs opacity-75">{group.description}</div>}
-                </div>
-                <span className="ml-auto text-sm font-semibold">({group.servers?.length || 0})</span>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setEditingGroup(group)
-                  }}
-                  className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleDeleteGroup(group.id)
-                  }}
-                  className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-            </div>
-
-            {/* Group Servers */}
-            {expandedGroups.has(group.id!) && (
-              <div className="border-t-2 border-current opacity-30 px-3 py-2">
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const serverId = parseInt(e.target.value)
-                    if (serverId) {
-                      handleAddServerToGroup(serverId, group.id)
-                      e.target.value = ''
-                    }
-                  }}
-                  className="w-full px-2 py-1 text-sm rounded bg-white bg-opacity-20 text-white mb-2"
-                >
-                  <option value="">+ Ajouter serveur...</option>
-                  {servers
-                    .filter(s => !group.servers?.includes(s.id))
-                    .map(s => (
-                      <option key={s.id} value={s.id} className="text-slate-900">
-                        {s.name}
-                      </option>
-                    ))}
-                </select>
-
-                <div className="space-y-1">
-                  {group.servers?.map(serverId => {
-                    const server = servers.find(s => s.id === serverId)
-                    if (!server) return null
-                    return (
-                      <div
-                        key={serverId}
-                        className="flex items-center justify-between bg-white bg-opacity-20 px-2 py-1 rounded text-sm"
-                      >
-                        <span>{server.name}</span>
-                        <button
-                          onClick={() => handleRemoveServerFromGroup(serverId, group.id)}
-                          className="hover:bg-white hover:bg-opacity-30 p-1 rounded"
-                        >
-                          <X size={14} />
-                        </button>
+                <div key={group.id} className={`rounded-lg border-2 ${getColorClass(group.color)}`}>
+                  {/* Group Header */}
+                  <div
+                    onClick={() => toggleGroupExpanded(group.id)}
+                    className="flex items-center justify-between p-3 cursor-pointer hover:opacity-80 transition"
+                  >
+                    <div className="flex items-center gap-2">
+                      {expandedGroups.has(group.id!) ? (
+                        <ChevronDown size={18} />
+                      ) : (
+                        <ChevronRight size={18} />
+                      )}
+                      <span className="text-2xl">{group.icon}</span>
+                      <div>
+                        <div className="font-bold">{group.name}</div>
+                        {group.description && <div className="text-xs opacity-75">{group.description}</div>}
                       </div>
-                    )
-                  })}
+                      <span className="ml-auto text-sm font-semibold">({group.servers?.length || 0})</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                        }}
+                        className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteGroup(group.id)
+                        }}
+                        className="p-1 hover:bg-white hover:bg-opacity-20 rounded"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Group Servers */}
+                  {expandedGroups.has(group.id!) && (
+                    <div className="border-t-2 border-current opacity-30 px-3 py-2">
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          const serverId = parseInt(e.target.value)
+                          if (serverId) {
+                            handleAddServerToGroup(serverId, group.id)
+                            e.target.value = ''
+                          }
+                        }}
+                        className="w-full px-2 py-1 text-sm rounded bg-white bg-opacity-20 text-white mb-2"
+                      >
+                        <option value="">+ Ajouter serveur...</option>
+                        {servers
+                          .filter(s => !group.servers?.includes(s.id))
+                          .map(s => (
+                            <option key={s.id} value={s.id} className="text-slate-900">
+                              {s.name}
+                            </option>
+                          ))}
+                      </select>
+
+                      <div className="space-y-1">
+                        {group.servers?.map(serverId => {
+                          const server = servers.find(s => s.id === serverId)
+                          if (!server) return null
+                          return (
+                            <div
+                              key={serverId}
+                              className="flex items-center justify-between bg-white bg-opacity-20 px-2 py-1 rounded text-sm"
+                            >
+                              <span>{server.name}</span>
+                              <button
+                                onClick={() => handleRemoveServerFromGroup(serverId, group.id)}
+                                className="hover:bg-white hover:bg-opacity-30 p-1 rounded"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              ))
             )}
           </div>
-        ))}
-      </div>
 
-      {/* Ungrouped Servers */}
-      {ungroupedServers.length > 0 && (
-        <div className="rounded-lg border-2 border-gray-400 bg-gray-100 text-gray-800 p-3">
-          <div className="font-bold mb-2">📋 Sans groupe ({ungroupedServers.length})</div>
-          <div className="space-y-1">
-            {ungroupedServers.map(server => (
-              <div key={server.id} className="text-sm opacity-75">
-                {server.name}
+          {/* Ungrouped Servers */}
+          {ungroupedServers.length > 0 && (
+            <div className="rounded-lg border-2 border-gray-400 bg-gray-100 text-gray-800 p-3">
+              <div className="font-bold mb-2">📋 Sans groupe ({ungroupedServers.length})</div>
+              <div className="space-y-1">
+                {ungroupedServers.map(server => (
+                  <div key={server.id} className="text-sm opacity-75">
+                    {server.name}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Create Modal */}
