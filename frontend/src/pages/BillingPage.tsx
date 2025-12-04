@@ -12,6 +12,7 @@ interface Invoice {
 export default function BillingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPlan, setCurrentPlan] = useState('Starter')
   const [renewalDate, setRenewalDate] = useState('')
 
   useEffect(() => {
