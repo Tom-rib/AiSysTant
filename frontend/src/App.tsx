@@ -2,7 +2,6 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { SSHProvider } from './context/SSHContext'
 import { ChatProvider } from './context/ChatContext'
-import { useState, useEffect } from 'react'
 
 // ✅ NOUVEAU: Importer les styles du terminal SSH
 import './styles/ssh-terminal.css'
@@ -34,27 +33,16 @@ import AdminServers from './pages/Admin/AdminServers'
 
 // Components
 import PrivateRoute from './components/PrivateRoute'
+import ProtectedAdminRoute from './components/ProtectedAdminRoute'
 import Navbar from './components/Navbar'
 import PublicNavbar from './components/PublicNavbar'
 
 function App() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
   const location = useLocation()
-  const [isAdmin, setIsAdmin] = useState(false)
   
   // Déterminer quelle navbar afficher
   const isPublicPage = ['/', '/pricing', '/login', '/register'].includes(location.pathname)
-
-  // Mettre à jour isAdmin quand user change
-  useEffect(() => {
-    if (user?.role === 'admin' || user?.role === 'super_admin') {
-      setIsAdmin(true)
-      console.log('✅ User is admin:', user.email)
-    } else {
-      setIsAdmin(false)
-      console.log('❌ User is not admin:', user?.email, 'Role:', user?.role)
-    }
-  }, [user])
 
   return (
     <SSHProvider>
@@ -158,7 +146,13 @@ function App() {
             {/* ✅ NOUVEAU: Admin Routes - URL séparée /admin-panel */}
             <Route
               path="/admin-panel"
-              element={isAdmin ? <AdminLayout /> : <Navigate to="/dashboard" />}
+              element={
+                <PrivateRoute>
+                  <ProtectedAdminRoute>
+                    <AdminLayout />
+                  </ProtectedAdminRoute>
+                </PrivateRoute>
+              }
             >
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsers />} />
