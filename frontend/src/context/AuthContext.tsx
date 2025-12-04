@@ -6,6 +6,7 @@ interface User {
   username: string
   email: string
   createdAt: string
+  role?: 'user' | 'admin' | 'super_admin'
 }
 
 interface AuthContextType {
