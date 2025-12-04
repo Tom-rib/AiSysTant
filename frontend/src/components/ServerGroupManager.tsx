@@ -45,7 +45,7 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
 
   useEffect(() => {
     loadGroups()
-  }, [])
+  }, [servers])
 
   const loadGroups = async () => {
     try {

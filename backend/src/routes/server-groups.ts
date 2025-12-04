@@ -212,7 +212,7 @@ router.post('/:groupId/servers', authenticate, async (req: Request, res: Respons
 
     // Check server ownership
     const serverResult = await db.query(
-      'SELECT user_id FROM servers WHERE id = $1',
+      'SELECT user_id FROM ssh_servers WHERE id = $1',
       [serverId]
     );
 
