@@ -24,17 +24,27 @@ import BillingPage from './pages/BillingPage'
 import { AccountSettings } from './pages/AccountSettings'
 import { SecuritySettings } from './pages/SecuritySettings'
 
+// ✅ NOUVEAU: Admin Pages
+import AdminLayout from './components/Admin/AdminLayout'
+import AdminDashboard from './pages/Admin/AdminDashboard'
+import AdminUsers from './pages/Admin/AdminUsers'
+import AdminBilling from './pages/Admin/AdminBilling'
+import AdminServers from './pages/Admin/AdminServers'
+
 // Components
 import PrivateRoute from './components/PrivateRoute'
 import Navbar from './components/Navbar'
 import PublicNavbar from './components/PublicNavbar'
 
 function App() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
   const location = useLocation()
   
   // Déterminer quelle navbar afficher
   const isPublicPage = ['/', '/pricing', '/login', '/register'].includes(location.pathname)
+
+  // Vérifier si l'utilisateur est admin
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
 
   return (
     <SSHProvider>
@@ -134,6 +144,17 @@ function App() {
                 </PrivateRoute>
               }
             />
+
+            {/* ✅ NOUVEAU: Admin Routes */}
+            <Route
+              path="/admin"
+              element={isAdmin ? <AdminLayout /> : <Navigate to="/dashboard" />}
+            >
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="billing" element={<AdminBilling />} />
+              <Route path="servers" element={<AdminServers />} />
+            </Route>
 
             {/* 404 - Not found */}
             <Route 
