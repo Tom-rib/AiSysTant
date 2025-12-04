@@ -42,7 +42,7 @@ function App() {
   const location = useLocation()
   
   // Déterminer quelle navbar afficher
-  const isPublicPage = ['/', '/pricing', '/login', '/register'].includes(location.pathname)
+  const isPublicPage = ['/', '/login', '/register'].includes(location.pathname)
 
   return (
     <SSHProvider>
@@ -57,16 +57,16 @@ function App() {
               element={<Landing />} 
             />
             <Route 
-              path="/pricing" 
-              element={<Pricing />} 
-            />
-            <Route 
               path="/login" 
               element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} 
             />
             <Route 
               path="/register" 
               element={isAuthenticated ? <Navigate to="/dashboard" /> : <Register />} 
+            />
+            <Route 
+              path="/pricing" 
+              element={isAuthenticated ? <Navigate to="/dashboard" /> : <Pricing />} 
             />
 
             {/* Protected routes */}
@@ -75,6 +75,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/pricing"
+              element={
+                <PrivateRoute>
+                  <Pricing />
                 </PrivateRoute>
               }
             />

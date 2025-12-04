@@ -129,7 +129,7 @@ const PricingPage = () => {
     {
       id: 'trial',
       question: 'Avez-vous un essai gratuit?',
-      answer: 'Oui! Notre plan FREE est gratuit et illimité. Essayez AiSystant sans carte de crédit.',
+      answer: 'Oui ! Nous proposons une formule FREE qui vous permet d’essayer le service gratuitement. Sans carte de crédit.',
     },
   ];
 
