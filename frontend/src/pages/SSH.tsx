@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Server, ArrowLeft, Terminal, HelpCircle, X } from 'lucide-react'
-import { sshAPI } from '../services/api'
+import { sshAPI, groupsAPI } from '../services/api'
 import ServerGroupManager from '../components/ServerGroupManager'
 
 interface SSHServer {
@@ -62,6 +62,7 @@ export default function SSH() {
       }
     }
     loadServers()
+    loadGroups()
   }, [])
 
   // Sauvegarder l'état des sessions dans localStorage
@@ -117,7 +118,7 @@ export default function SSH() {
         return
       }
 
-      await sshAPI.addServer({
+      const response = await sshAPI.addServer({
         name: newServer.name,
         host: newServer.host,
         port: newServer.port,
@@ -126,6 +127,18 @@ export default function SSH() {
         privateKey: newServer.privateKey || undefined,
       })
 
+      // Si un groupe a été sélectionné, ajouter le serveur au groupe
+      if (newServer.groupId) {
+        const serverId = response.data.data?.id || response.data.id
+        if (serverId) {
+          try {
+            await groupsAPI.addServer(newServer.groupId, serverId)
+          } catch (err) {
+            console.error('Erreur ajout du serveur au groupe:', err)
+          }
+        }
+      }
+
       setNewServer({
         name: '',
         host: '',
@@ -133,6 +146,7 @@ export default function SSH() {
         username: '',
         password: '',
         privateKey: '',
+        groupId: 0,
       })
       setIsAddingServer(false)
       await loadServers()
@@ -378,6 +392,18 @@ export default function SSH() {
                 onChange={(e) => setNewServer({ ...newServer, privateKey: e.target.value })}
                 className="input"
               />
+              <select
+                value={newServer.groupId}
+                onChange={(e) => setNewServer({ ...newServer, groupId: parseInt(e.target.value) || 0 })}
+                className="input"
+              >
+                <option value={0}>Aucun groupe (optionnel)</option>
+                {groups.map((g: any) => (
+                  <option key={g.id} value={g.id}>
+                    {g.icon} {g.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex gap-2">
               <button onClick={handleAddServer} className="btn-primary">
@@ -463,6 +489,27 @@ export default function SSH() {
                             disabled={!activeSessions.has(server.id)}
                           >
                             🧹 Effacer
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (groups.length > 0) {
+                                const groupId = window.prompt('Entrez l\'ID du groupe ou sélectionnez:\n' + groups.map((g: any) => `${g.id}: ${g.icon} ${g.name}`).join('\n'))
+                                if (groupId) {
+                                  groupsAPI.addServer(parseInt(groupId), server.id)
+                                    .then(() => {
+                                      loadGroups()
+                                      alert('Serveur ajouté au groupe')
+                                    })
+                                    .catch((err) => alert('Erreur: ' + err.message))
+                                }
+                              } else {
+                                alert('Créez d\'abord un groupe')
+                              }
+                            }}
+                            className="flex-1 p-2 text-xs text-blue-600 hover:bg-blue-50 border-r border-gray-200"
+                            title="Ajouter à un groupe"
+                          >
+                            📁 Groupe
                           </button>
                           <button
                             onClick={() => handleDeleteServer(server.id)}
