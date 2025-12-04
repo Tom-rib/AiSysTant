@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express'
 import cors from 'cors'
 import axios from 'axios'
 import path from 'path'
+import fs from 'fs'
 
 const app = express()
 const ADMIN_PORT = 3000
@@ -10,8 +11,18 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 app.use(cors())
 app.use(express.json())
 
+// Déterminer le chemin du dossier admin-panel
+const adminPanelPath = path.join(__dirname, '../../admin-panel')
+console.log('📁 Serving static files from:', adminPanelPath)
+console.log('📄 Files exist:', fs.existsSync(adminPanelPath))
+
 // Servir le fichier HTML statique
-app.use(express.static(path.join(__dirname, '../../admin-panel')))
+app.use(express.static(adminPanelPath))
+
+// Route pour la racine - servir index.html
+app.get('/', (req: Request, res: Response) => {
+  res.sendFile(path.join(adminPanelPath, 'index.html'))
+})
 
 // Login endpoint - valide les credentials et retourne token si admin
 app.post('/api/login', async (req: Request, res: Response) => {
@@ -77,6 +88,7 @@ app.use('/api/admin', async (req: Request, res: Response) => {
 
 app.listen(ADMIN_PORT, () => {
   console.log(`✅ Admin Panel running on http://0.0.0.0:${ADMIN_PORT}`)
-  console.log(`📡 Access at: http://localhost:${ADMIN_PORT}`)
+  console.log(`📡 Access at: http://192.168.136.149:${ADMIN_PORT}`)
 })
+
 
