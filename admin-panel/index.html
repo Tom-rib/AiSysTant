@@ -13,253 +13,246 @@
     
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: #0f172a;
+      background: linear-gradient(to bottom right, #0f172a, #1a2942);
       color: #fff;
-    }
-    
-    .min-h-screen {
       min-height: 100vh;
     }
     
-    .flex {
-      display: flex;
-    }
-    
-    .items-center {
-      align-items: center;
-    }
-    
-    .justify-center {
-      justify-content: center;
-    }
-    
-    .bg-gradient-to-br {
-      background: linear-gradient(to bottom right, #0f172a, #1a2942);
-    }
-    
-    .bg-gray-800 {
-      background-color: #1e293b;
-    }
-    
-    .bg-gray-700 {
-      background-color: #334155;
-    }
-    
-    .p-8 {
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
       padding: 2rem;
     }
     
-    .p-6 {
-      padding: 1.5rem;
+    .login-page {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
     }
     
-    .p-4 {
-      padding: 1rem;
-    }
-    
-    .rounded-lg {
+    .login-box {
+      background: #1e293b;
+      padding: 2rem;
       border-radius: 0.5rem;
-    }
-    
-    .shadow-2xl {
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    }
-    
-    .w-96 {
-      width: 24rem;
-    }
-    
-    .space-y-4 > * + * {
-      margin-top: 1rem;
-    }
-    
-    .space-y-2 > * + * {
-      margin-top: 0.5rem;
-    }
-    
-    .w-full {
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
       width: 100%;
+      max-width: 400px;
     }
     
-    .px-4 {
-      padding-left: 1rem;
-      padding-right: 1rem;
-    }
-    
-    .py-2 {
-      padding-top: 0.5rem;
-      padding-bottom: 0.5rem;
-    }
-    
-    .border {
-      border: 1px solid #475569;
-    }
-    
-    .rounded {
-      border-radius: 0.25rem;
-    }
-    
-    .text-white {
-      color: #fff;
-    }
-    
-    .bg-blue-600 {
-      background-color: #2563eb;
-    }
-    
-    .bg-blue-600:hover {
-      background-color: #1d4ed8;
-    }
-    
-    .font-bold {
-      font-weight: bold;
-    }
-    
-    .cursor-pointer {
-      cursor: pointer;
-    }
-    
-    .text-red-500 {
-      color: #ef4444;
-    }
-    
-    .text-sm {
-      font-size: 0.875rem;
-    }
-    
-    .hidden {
-      display: none;
-    }
-    
-    .text-3xl {
+    .login-box h1 {
       font-size: 1.875rem;
-    }
-    
-    .mb-8 {
+      font-weight: bold;
       margin-bottom: 2rem;
-    }
-    
-    .mb-2 {
-      margin-bottom: 0.5rem;
-    }
-    
-    .mb-4 {
-      margin-bottom: 1rem;
-    }
-    
-    .text-center {
       text-align: center;
     }
     
-    .border-b {
-      border-bottom: 1px solid #334155;
+    .form-group {
+      margin-bottom: 1rem;
     }
     
-    .gap-4 {
-      gap: 1rem;
-    }
-    
-    .grid {
-      display: grid;
-    }
-    
-    .grid-cols-4 {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    
-    .text-gray-400 {
-      color: #94a3b8;
-    }
-    
-    .text-green-400 {
-      color: #4ade80;
-    }
-    
-    .text-red-400 {
-      color: #f87171;
-    }
-    
-    .bg-red-600 {
-      background-color: #dc2626;
-    }
-    
-    .bg-red-600:hover {
-      background-color: #b91c1c;
-    }
-    
-    input, button {
+    .form-group input {
+      width: 100%;
+      padding: 0.5rem 1rem;
+      background: #334155;
+      border: 1px solid #475569;
+      border-radius: 0.25rem;
+      color: #fff;
       font-size: 1rem;
     }
     
-    input {
-      border: 1px solid #475569;
-      background-color: #334155;
-      padding: 0.5rem 1rem;
-      border-radius: 0.25rem;
-      color: #fff;
-    }
-    
-    input::placeholder {
+    .form-group input::placeholder {
       color: #94a3b8;
     }
     
-    button {
+    .form-group button {
+      width: 100%;
       padding: 0.5rem 1rem;
+      background: #2563eb;
       border: none;
       border-radius: 0.25rem;
+      color: #fff;
       font-weight: bold;
       cursor: pointer;
+      font-size: 1rem;
+    }
+    
+    .form-group button:hover {
+      background: #1d4ed8;
+    }
+    
+    .error {
+      color: #ef4444;
+      font-size: 0.875rem;
+      margin-top: 0.5rem;
+      display: none;
+    }
+    
+    .dashboard {
+      display: none;
+    }
+    
+    .navbar {
+      background: #334155;
+      border-bottom: 1px solid #475569;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      border-radius: 0.5rem;
+    }
+    
+    .navbar h1 {
+      font-size: 1.5rem;
+    }
+    
+    .navbar button {
+      background: #dc2626;
+      border: none;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border-radius: 0.25rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .navbar button:hover {
+      background: #b91c1c;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+      background: #334155;
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+    }
+    
+    .stat-card p:first-child {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-card p:last-child {
+      font-size: 1.875rem;
+      font-weight: bold;
+    }
+    
+    .users-section {
+      background: #334155;
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+    }
+    
+    .users-section h2 {
+      margin-bottom: 1rem;
+      font-size: 1.25rem;
+    }
+    
+    .user-item {
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 0.25rem;
+      margin-bottom: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .user-info p:first-child {
+      font-weight: bold;
+    }
+    
+    .user-info p:last-child {
+      font-size: 0.875rem;
+      color: #94a3b8;
+    }
+    
+    .status {
+      font-size: 0.875rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+    
+    .status.active {
+      color: #4ade80;
+    }
+    
+    .status.inactive {
+      color: #f87171;
     }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="app"></div>
 
   <script>
-    const API_URL = 'http://192.168.136.149:3002'
-    const BACKEND_API = 'http://192.168.136.149:3001/api/admin'
-    
+    const BACKEND_URL = 'http://192.168.136.149:3001'
     let token = localStorage.getItem('admin_token')
     let currentUser = JSON.parse(localStorage.getItem('admin_user') || '{}')
 
     async function fetchAPI(url, options = {}) {
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
-        ...options
-      })
-      
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || `HTTP ${response.status}`)
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
       }
       
-      return response.json()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      try {
+        const response = await fetch(url, {
+          headers,
+          ...options
+        })
+        
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.message || `HTTP ${response.status}`)
+        }
+        
+        return await response.json()
+      } catch (err) {
+        console.error('Fetch error:', err)
+        throw err
+      }
     }
 
     async function login(email, password) {
       try {
-        console.log('Tentative de connexion:', email)
-        const response = await fetchAPI(`${API_URL}/api/login`, {
+        console.log('🔐 Login attempt:', email)
+        const response = await fetchAPI(`${BACKEND_URL}/api/auth/login`, {
           method: 'POST',
           body: JSON.stringify({ email, password })
         })
         
-        token = response.data.token
-        currentUser = response.data.user
+        console.log('Response:', response)
+        
+        const { token: newToken, user } = response.data
+        
+        // Vérifier que c'est un admin
+        if (user.role !== 'admin' && user.role !== 'super_admin') {
+          showError(`Accès refusé. Votre rôle est: ${user.role}`)
+          return
+        }
+        
+        token = newToken
+        currentUser = user
         localStorage.setItem('admin_token', token)
         localStorage.setItem('admin_user', JSON.stringify(currentUser))
-        console.log('✅ Connexion réussie:', currentUser)
+        console.log('✅ Login successful:', currentUser)
         render()
       } catch (error) {
-        console.error('❌ Erreur:', error.message)
-        const errorDiv = document.getElementById('error')
-        if (errorDiv) {
-          errorDiv.textContent = error.message || 'Erreur de connexion'
-          errorDiv.classList.remove('hidden')
-        }
+        console.error('❌ Login error:', error.message)
+        showError(error.message || 'Erreur de connexion')
       }
     }
 
@@ -271,112 +264,120 @@
       render()
     }
 
+    function showError(message) {
+      const errorEl = document.getElementById('error')
+      if (errorEl) {
+        errorEl.textContent = message
+        errorEl.style.display = 'block'
+      }
+    }
+
     async function loadStats() {
       try {
-        const response = await fetchAPI(`${BACKEND_API}/stats`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const response = await fetchAPI(`${BACKEND_URL}/api/admin/stats`)
         document.getElementById('totalUsers').textContent = response.totalUsers || 0
         document.getElementById('activeUsers').textContent = response.activeUsers || 0
         document.getElementById('monthlyRevenue').textContent = '€' + (response.monthlyRevenue || 0).toFixed(2)
         document.getElementById('totalServers').textContent = response.totalServers || 0
       } catch (error) {
-        console.error('Erreur stats:', error)
+        console.error('Stats error:', error)
       }
     }
 
     async function loadUsers() {
       try {
-        const response = await fetchAPI(`${BACKEND_API}/users?limit=10`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const response = await fetchAPI(`${BACKEND_URL}/api/admin/users?limit=10`)
         const users = response.users || []
         const html = users.map(u => `
-          <div class="bg-gray-700 p-4 rounded flex justify-between items-center">
-            <div>
-              <p class="font-bold">${u.email}</p>
-              <p class="text-sm text-gray-400">${u.plan || 'N/A'}</p>
+          <div class="user-item">
+            <div class="user-info">
+              <p>${u.email}</p>
+              <p>${u.plan || 'N/A'}</p>
             </div>
-            <span class="text-sm ${u.status === 'active' ? 'text-green-400' : 'text-red-400'}">${u.status}</span>
+            <span class="status ${u.status === 'active' ? 'active' : 'inactive'}">${u.status}</span>
           </div>
         `).join('')
-        document.getElementById('usersList').innerHTML = html || '<p class="text-gray-400">Aucun utilisateur</p>'
+        document.getElementById('usersList').innerHTML = html || '<p style="color: #94a3b8;">Aucun utilisateur</p>'
       } catch (error) {
-        console.error('Erreur users:', error)
+        console.error('Users error:', error)
       }
     }
 
-    const loginPage = `
-      <div class="min-h-screen flex items-center justify-center bg-gradient-to-br">
-        <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-96">
-          <h1 class="text-3xl font-bold mb-8 text-center">🛡️ Admin Panel</h1>
-          <form onsubmit="handleLogin(event)" class="space-y-4">
-            <input type="email" id="email" placeholder="Email" required>
-            <input type="password" id="password" placeholder="Mot de passe" required>
-            <button type="submit" class="w-full bg-blue-600 px-4 py-2 rounded font-bold cursor-pointer">Connexion</button>
-            <div id="error" class="text-red-500 text-sm hidden"></div>
-          </form>
-        </div>
-      </div>
-    `
-
-    const dashboardPage = `
-      <div class="min-h-screen bg-gray-800">
-        <nav class="bg-gray-700 border-b p-4 flex justify-between items-center">
-          <h1 class="text-2xl font-bold">🛡️ Admin Panel</h1>
-          <div class="flex items-center gap-4">
-            <span>${currentUser.email}</span>
-            <button onclick="logout()" class="bg-red-600 px-4 py-2 rounded cursor-pointer">Logout</button>
-          </div>
-        </nav>
-
-        <div class="p-8">
-          <div class="grid grid-cols-4 gap-4 mb-8">
-            <div class="bg-gray-700 p-6 rounded-lg">
-              <p class="text-gray-400 mb-2">Total Users</p>
-              <p id="totalUsers" class="text-3xl font-bold">-</p>
-            </div>
-            <div class="bg-gray-700 p-6 rounded-lg">
-              <p class="text-gray-400 mb-2">Active Users</p>
-              <p id="activeUsers" class="text-3xl font-bold">-</p>
-            </div>
-            <div class="bg-gray-700 p-6 rounded-lg">
-              <p class="text-gray-400 mb-2">Monthly Revenue</p>
-              <p id="monthlyRevenue" class="text-3xl font-bold">-</p>
-            </div>
-            <div class="bg-gray-700 p-6 rounded-lg">
-              <p class="text-gray-400 mb-2">Total Servers</p>
-              <p id="totalServers" class="text-3xl font-bold">-</p>
-            </div>
-          </div>
-
-          <div class="bg-gray-700 p-6 rounded-lg">
-            <h2 class="text-xl font-bold mb-4">Gestion des Utilisateurs</h2>
-            <div id="usersList" class="space-y-2">
-              <p class="text-gray-400">Chargement...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    `
-
-    function handleLogin(event) {
-      event.preventDefault()
+    function handleLogin(e) {
+      e.preventDefault()
       const email = document.getElementById('email').value
       const password = document.getElementById('password').value
       login(email, password)
     }
 
     function render() {
-      const root = document.getElementById('root')
-      if (token) {
-        root.innerHTML = dashboardPage
+      const app = document.getElementById('app')
+      
+      if (!token) {
+        app.innerHTML = `
+          <div class="login-page">
+            <div class="login-box">
+              <h1>🛡️ Admin Panel</h1>
+              <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                  <input type="email" id="email" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                  <input type="password" id="password" placeholder="Mot de passe" required>
+                </div>
+                <div class="form-group">
+                  <button type="submit">Connexion</button>
+                </div>
+                <div id="error" class="error"></div>
+              </form>
+            </div>
+          </div>
+        `
+      } else {
+        app.innerHTML = `
+          <div class="dashboard">
+            <div class="navbar">
+              <h1>🛡️ Admin Panel</h1>
+              <div>
+                <span style="margin-right: 1rem;">${currentUser.email}</span>
+                <button onclick="logout()">Logout</button>
+              </div>
+            </div>
+            
+            <div class="container">
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <p>Total Users</p>
+                  <p id="totalUsers">-</p>
+                </div>
+                <div class="stat-card">
+                  <p>Active Users</p>
+                  <p id="activeUsers">-</p>
+                </div>
+                <div class="stat-card">
+                  <p>Monthly Revenue</p>
+                  <p id="monthlyRevenue">-</p>
+                </div>
+                <div class="stat-card">
+                  <p>Total Servers</p>
+                  <p id="totalServers">-</p>
+                </div>
+              </div>
+              
+              <div class="users-section">
+                <h2>Gestion des Utilisateurs</h2>
+                <div id="usersList">
+                  <p style="color: #94a3b8;">Chargement...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `
+        
         setTimeout(() => {
           loadStats()
           loadUsers()
         }, 100)
-      } else {
-        root.innerHTML = loginPage
       }
     }
 
@@ -384,3 +385,4 @@
   </script>
 </body>
 </html>
+
