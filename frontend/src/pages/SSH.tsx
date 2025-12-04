@@ -406,7 +406,7 @@ export default function SSH() {
             {/* Servers List */}
             {!showGroupManager && (
               <div>
-                <h2 className="text-lg font-semibold text-text mb-3">Serveurs ({activeSessions.size} connectés)</h2>
+                <h2 className="text-lg font-semibold text-white mb-3">Serveurs ({activeSessions.size} connectés)</h2>
                 {servers.length === 0 ? (
                   <div className="p-4 bg-gray-50 rounded-lg text-center text-text-light">
                     <Server className="w-8 h-8 mx-auto mb-2 opacity-50" />
