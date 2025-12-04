@@ -54,12 +54,12 @@ export default function Navbar() {
                   to={link.path}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all ${
                     isActive(link.path)
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-blue-600 text-black'
                       : 'text-black hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span>{link.label}</span>
+                  <span className="text-black">{link.label}</span>
                 </Link>
               )
             })}
@@ -98,12 +98,12 @@ export default function Navbar() {
                   onClick={() => setIsMenuOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-all ${
                     isActive(link.path)
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-blue-600 text-black'
                       : 'text-black hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span>{link.label}</span>
+                  <span className="text-black">{link.label}</span>
                 </Link>
               )
             })}
