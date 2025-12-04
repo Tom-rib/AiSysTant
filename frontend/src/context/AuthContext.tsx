@@ -53,8 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await api.post('/auth/login', { email, password })
       
-      // Gérer la structure de réponse avec success/data
-      const responseData = response.data.data || response.data
+      // La réponse est: { success, message, data: { user, token } }
+      const { data: responseData } = response.data
       const { token, user: userData } = responseData
       
       // Stocker le token
@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Mettre à jour l'état utilisateur
       setUser(userData)
+      console.log('Login successful, user:', userData)
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Erreur de connexion')
     }
@@ -74,8 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await api.post('/auth/register', { username, email, password })
       
-      // Gérer la structure de réponse avec success/data
-      const responseData = response.data.data || response.data
+      // La réponse est: { success, message, data: { user, token } }
+      const { data: responseData } = response.data
       const { token, user: userData } = responseData
       
       // Stocker le token
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       // Mettre à jour l'état utilisateur
       setUser(userData)
+      console.log('Register successful, user:', userData)
     } catch (error: any) {
       throw new Error(error.response?.data?.message || "Erreur lors de l'inscription")
     }
