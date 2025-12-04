@@ -155,9 +155,9 @@ function App() {
               }
             />
 
-            {/* ✅ NOUVEAU: Admin Routes */}
+            {/* ✅ NOUVEAU: Admin Routes - URL séparée /admin-panel */}
             <Route
-              path="/admin"
+              path="/admin-panel"
               element={isAdmin ? <AdminLayout /> : <Navigate to="/dashboard" />}
             >
               <Route index element={<AdminDashboard />} />
