@@ -81,12 +81,13 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
 
   const handleCreateGroup = async () => {
     if (!formData.name.trim()) {
-      alert('Entrez un nom pour le groupe')
+      setError('Entrez un nom pour le groupe')
       return
     }
 
     try {
       setIsSubmitting(true)
+      setError('')
       const response = await groupsAPI.create({
         name: formData.name,
         icon: formData.icon,
@@ -102,10 +103,11 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
       
       setFormData({ name: '', icon: '🚀', color: 'blue', description: '' })
       setShowCreateModal(false)
-      setError('')
+      await loadGroups()
     } catch (err: any) {
       console.error('Error creating group:', err)
-      setError(err.response?.data?.error || 'Failed to create group')
+      const errorMsg = err.response?.data?.error || err.message || 'Failed to create group'
+      setError(errorMsg)
     } finally {
       setIsSubmitting(false)
     }
@@ -364,6 +366,12 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96 text-slate-900">
             <h2 className="text-xl font-bold mb-4">Créer un groupe</h2>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                {error}
+              </div>
+            )}
 
             <div className="space-y-4">
               <div>
