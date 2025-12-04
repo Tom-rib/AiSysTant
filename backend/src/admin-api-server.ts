@@ -5,7 +5,7 @@ import path from 'path'
 import fs from 'fs'
 
 const app = express()
-const ADMIN_PORT = 3000
+const ADMIN_PORT = parseInt(process.env.ADMIN_PORT || '3002', 10)
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 
 app.use(cors())
@@ -90,5 +90,6 @@ app.listen(ADMIN_PORT, () => {
   console.log(`✅ Admin Panel running on http://0.0.0.0:${ADMIN_PORT}`)
   console.log(`📡 Access at: http://192.168.136.149:${ADMIN_PORT}`)
 })
+
 
 
