@@ -91,6 +91,33 @@ const migrate = async () => {
     `);
     console.log('✅ Table user_settings créée');
 
+    // Table des groupes de serveurs
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS server_groups (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        icon VARCHAR(10),
+        color VARCHAR(50),
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Table server_groups créée');
+
+    // Table des membres du groupe (jointure)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS server_group_members (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER NOT NULL REFERENCES server_groups(id) ON DELETE CASCADE,
+        server_id INTEGER NOT NULL REFERENCES ssh_servers(id) ON DELETE CASCADE,
+        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(group_id, server_id)
+      );
+    `);
+    console.log('✅ Table server_group_members créée');
+
     // Index pour améliorer les performances
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_messages_conversation 
@@ -107,6 +134,18 @@ const migrate = async () => {
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_user_settings_lookup
       ON user_settings(user_id, setting_name);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_server_groups_user
+      ON server_groups(user_id);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_server_group_members_group
+      ON server_group_members(group_id);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_server_group_members_server
+      ON server_group_members(server_id);
     `);
     console.log('✅ Index créés');
 

@@ -22,6 +22,8 @@ import sshTerminalRoutes from './routes/ssh-terminal';
 import sshShellRoutes from './routes/ssh-shell';
 // ✅ NOUVEAU: Importer les routes des groupes de serveurs
 import serverGroupsRoutes from './routes/server-groups';
+// ✅ NOUVEAU: Importer les routes admin
+import adminRoutes from './routes/admin';
 // ✅ NOUVEAU: Importer les handlers Socket.io pour le terminal
 import { setupTerminalSockets } from './sockets/terminal';
 
@@ -189,6 +191,8 @@ app.use('/api/ssh-terminal', sshTerminalRoutes);
 app.use('/api/ssh-shell', sshShellRoutes);
 // ✅ NOUVEAU: Routes des groupes de serveurs
 app.use('/api/server-groups', serverGroupsRoutes);
+// ✅ NOUVEAU: Routes admin
+app.use('/api/admin', adminRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/settings', settingsRoutes);
 
@@ -212,6 +216,86 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   });
 });
 
+// Fonction de migration
+const runMigrations = async () => {
+  try {
+    console.log('🔄 Exécution des migrations...');
+
+    // Table des utilisateurs
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        avatar_url VARCHAR(255),
+        role VARCHAR(20) DEFAULT 'user',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Table des serveurs SSH
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ssh_servers (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(100) NOT NULL,
+        host VARCHAR(255) NOT NULL,
+        port INTEGER DEFAULT 22,
+        username VARCHAR(100) NOT NULL,
+        password VARCHAR(255),
+        private_key TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Table des groupes de serveurs
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS server_groups (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        icon VARCHAR(10),
+        color VARCHAR(50),
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Table des membres du groupe (jointure)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS server_group_members (
+        id SERIAL PRIMARY KEY,
+        group_id INTEGER NOT NULL REFERENCES server_groups(id) ON DELETE CASCADE,
+        server_id INTEGER NOT NULL REFERENCES ssh_servers(id) ON DELETE CASCADE,
+        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(group_id, server_id)
+      );
+    `);
+
+    // Créer les index
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_server_groups_user
+      ON server_groups(user_id);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_server_group_members_group
+      ON server_group_members(group_id);
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_server_group_members_server
+      ON server_group_members(server_id);
+    `);
+
+    console.log('✅ Migrations exécutées avec succès');
+  } catch (error) {
+    console.error('⚠️ Erreur lors de la migration:', error);
+  }
+};
+
 // Démarrage du serveur
 const startServer = async () => {
   try {
@@ -227,6 +311,9 @@ const startServer = async () => {
     try {
       await pool.query('SELECT NOW()');
       console.log('✅ PostgreSQL connecté');
+      
+      // Exécuter les migrations
+      await runMigrations();
     } catch (error) {
       console.warn('⚠️ PostgreSQL non disponible - API limitée');
     }

@@ -1,10 +1,11 @@
 import { Router, Request, Response } from 'express'
-import { requireAdmin } from '../middleware/adminAuth'
+import { authenticate, requireAdmin } from '../middleware/auth'
 import { AdminService } from '../services/adminService'
 
 const router = Router()
 
-// Protect all admin routes
+// Protect all admin routes - d'abord authentifier, puis vérifier le rôle admin
+router.use(authenticate)
 router.use(requireAdmin)
 
 // GET /api/admin/stats
