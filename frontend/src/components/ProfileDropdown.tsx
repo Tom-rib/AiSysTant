@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 
 export const ProfileDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { user: authUser, logout: authLogout } = useAuth();
 
   const user = {
-    email: localStorage.getItem('userEmail') || 'user@example.com',
-    username: localStorage.getItem('username') || 'User',
-    tier: localStorage.getItem('userTier') || 'Starter',
+    email: authUser?.email || 'user@example.com',
+    username: authUser?.username || 'User',
+    tier: authUser?.tier || 'Starter',
   };
 
   useEffect(() => {
@@ -29,9 +31,7 @@ export const ProfileDropdown: React.FC = () => {
     } catch (error) {
       console.error('Logout error:', error);
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('username');
+    authLogout();
     navigate('/login');
   };
 
