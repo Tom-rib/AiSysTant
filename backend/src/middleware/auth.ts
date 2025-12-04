@@ -86,11 +86,22 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
 
 // Middleware pour vérifier le rôle admin
 export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!req.user || req.user.role !== 'admin') {
-    return res.status(403).json({
+  if (!req.user) {
+    return res.status(401).json({
       success: false,
-      message: 'Accès refusé. Droits administrateur requis.'
+      message: 'Non authentifié'
     });
   }
+  
+  if (req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+    console.log(`❌ Admin access denied for user: ${req.user.email}, role: ${req.user.role}`);
+    return res.status(403).json({
+      success: false,
+      message: 'Accès refusé. Droits administrateur requis.',
+      userRole: req.user.role
+    });
+  }
+  
+  console.log(`✅ Admin access granted for user: ${req.user.email}, role: ${req.user.role}`);
   next();
 };
