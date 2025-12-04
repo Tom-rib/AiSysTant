@@ -327,12 +327,12 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
                           return (
                             <div
                               key={serverId}
-                              className="flex items-center justify-between bg-white bg-opacity-20 px-2 py-1 rounded text-sm"
+                              className="flex items-center justify-between bg-gray-100 px-2 py-1 rounded text-sm text-gray-900 font-medium"
                             >
                               <span>{server.name}</span>
                               <button
                                 onClick={() => handleRemoveServerFromGroup(serverId, group.id)}
-                                className="hover:bg-white hover:bg-opacity-30 p-1 rounded"
+                                className="hover:bg-gray-200 p-1 rounded text-gray-600"
                               >
                                 <X size={14} />
                               </button>
