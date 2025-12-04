@@ -8,8 +8,14 @@ const app = express()
 const ADMIN_PORT = parseInt(process.env.ADMIN_PORT || '3002', 10)
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001'
 
-app.use(cors())
+app.use(cors({
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}))
 app.use(express.json())
+app.options('*', cors())
 
 // Déterminer le chemin du dossier admin-panel
 const adminPanelPath = path.join(__dirname, '../../admin-panel')
