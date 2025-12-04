@@ -308,13 +308,13 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
                             e.target.value = ''
                           }
                         }}
-                        className="w-full px-2 py-1 text-sm rounded bg-gray-100 text-gray-900 mb-2 font-medium border border-gray-300"
+                        className="w-full px-2 py-1 text-sm rounded bg-white text-black mb-2 font-medium border border-gray-400"
                       >
                         <option value="">+ Ajouter un serveur...</option>
                         {servers
                           .filter(s => !group.servers?.includes(s.id))
                           .map(s => (
-                            <option key={s.id} value={s.id} className="text-slate-900">
+                            <option key={s.id} value={s.id} className="text-black">
                               {s.name}
                             </option>
                           ))}
@@ -327,12 +327,12 @@ export default function ServerGroupManager({ servers, onGroupsChange }: ServerGr
                           return (
                             <div
                               key={serverId}
-                              className="flex items-center justify-between bg-gray-100 px-2 py-1 rounded text-sm text-gray-900 font-medium"
+                              className="flex items-center justify-between bg-white px-2 py-1 rounded text-sm text-black font-medium"
                             >
                               <span>{server.name}</span>
                               <button
                                 onClick={() => handleRemoveServerFromGroup(serverId, group.id)}
-                                className="hover:bg-gray-200 p-1 rounded text-gray-600"
+                                className="hover:bg-gray-200 p-1 rounded text-black"
                               >
                                 <X size={14} />
                               </button>
