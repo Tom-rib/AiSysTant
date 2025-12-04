@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Server, ArrowLeft, Terminal, HelpCircle, X } from 'lucide-react'
 import { sshAPI } from '../services/api'
+import ServerGroupManager from '../components/ServerGroupManager'
 
 interface SSHServer {
   id: number
@@ -20,12 +21,22 @@ interface TerminalSession {
   isConnected: boolean
 }
 
+interface ServerGroup {
+  id?: number
+  name: string
+  icon: string
+  color: string
+  description?: string
+  servers?: number[]
+}
+
 export default function SSH() {
   const navigate = useNavigate()
   
   const [servers, setServers] = useState<SSHServer[]>([])
   const [loading, setLoading] = useState(true)
   const [isAddingServer, setIsAddingServer] = useState(false)
+  const [showGroupManager, setShowGroupManager] = useState(false)
   
   // Gestion de plusieurs terminaux
   const [activeSessions, setActiveSessions] = useState<Map<number, TerminalSession>>(new Map())
@@ -374,66 +385,107 @@ export default function SSH() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
-        <div className="grid grid-cols-3 gap-6">
-          {/* Servers List */}
-          <div className="col-span-1">
-            <h2 className="text-lg font-semibold text-text mb-3">Serveurs ({activeSessions.size} connectés)</h2>
-            {servers.length === 0 ? (
-              <div className="p-4 bg-gray-50 rounded-lg text-center text-text-light">
-                <Server className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Aucun serveur</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {servers.map(server => (
-                  <div key={server.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => openSession(server.id, server.name)}
-                      className={`w-full p-3 text-left transition ${
-                        activeServerId === server.id
-                          ? 'bg-primary text-white'
-                          : 'bg-white hover:bg-gray-50'
-                      }`}
-                    >
-                      <p className="font-medium">{server.name}</p>
-                      <p className={`text-xs ${activeServerId === server.id ? 'text-white' : 'text-text-light'}`}>
-                        {server.username}@{server.host}:{server.port}
-                      </p>
-                      {activeSessions.has(server.id) && (
-                        <p className={`text-xs mt-1 ${activeServerId === server.id ? 'text-white' : 'text-green-600'}`}>
-                          ● Connecté
-                        </p>
-                      )}
-                    </button>
-                    <div className="flex border-t border-gray-200">
-                      <button
-                        onClick={() => {
-                          if (activeSessions.has(server.id)) {
-                            clearSessionOutput(server.id)
-                          }
-                        }}
-                        className="flex-1 p-2 text-xs text-gray-600 hover:bg-gray-50 border-r border-gray-200 disabled:opacity-50"
-                        title="Effacer le terminal"
-                        disabled={!activeSessions.has(server.id)}
-                      >
-                        🧹 Effacer
-                      </button>
-                      <button
-                        onClick={() => handleDeleteServer(server.id)}
-                        className="flex-1 p-2 text-xs text-red-600 hover:bg-red-50"
-                        title="Supprimer"
-                      >
-                        🗑️ Supprimer
-                      </button>
-                    </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Sidebar - Servers & Groups */}
+          <div className="lg:col-span-1 order-2 lg:order-1">
+            {/* Tabs for Servers and Groups */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setShowGroupManager(false)}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold transition ${
+                  !showGroupManager
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Serveurs
+              </button>
+              <button
+                onClick={() => setShowGroupManager(true)}
+                className={`flex-1 py-2 px-3 rounded-lg font-semibold transition ${
+                  showGroupManager
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Groupes
+              </button>
+            </div>
+
+            {/* Servers List */}
+            {!showGroupManager && (
+              <div>
+                <h2 className="text-lg font-semibold text-text mb-3">Serveurs ({activeSessions.size} connectés)</h2>
+                {servers.length === 0 ? (
+                  <div className="p-4 bg-gray-50 rounded-lg text-center text-text-light">
+                    <Server className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Aucun serveur</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="space-y-2">
+                    {servers.map(server => (
+                      <div key={server.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => openSession(server.id, server.name)}
+                          className={`w-full p-3 text-left transition ${
+                            activeServerId === server.id
+                              ? 'bg-primary text-white'
+                              : 'bg-white hover:bg-gray-50'
+                          }`}
+                        >
+                          <p className="font-medium">{server.name}</p>
+                          <p className={`text-xs ${activeServerId === server.id ? 'text-white' : 'text-text-light'}`}>
+                            {server.username}@{server.host}:{server.port}
+                          </p>
+                          {activeSessions.has(server.id) && (
+                            <p className={`text-xs mt-1 ${activeServerId === server.id ? 'text-white' : 'text-green-600'}`}>
+                              ● Connecté
+                            </p>
+                          )}
+                        </button>
+                        <div className="flex border-t border-gray-200">
+                          <button
+                            onClick={() => {
+                              if (activeSessions.has(server.id)) {
+                                clearSessionOutput(server.id)
+                              }
+                            }}
+                            className="flex-1 p-2 text-xs text-gray-600 hover:bg-gray-50 border-r border-gray-200 disabled:opacity-50"
+                            title="Effacer le terminal"
+                            disabled={!activeSessions.has(server.id)}
+                          >
+                            🧹 Effacer
+                          </button>
+                          <button
+                            onClick={() => handleDeleteServer(server.id)}
+                            className="flex-1 p-2 text-xs text-red-600 hover:bg-red-50"
+                            title="Supprimer"
+                          >
+                            🗑️ Supprimer
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Group Manager */}
+            {showGroupManager && (
+              <div className="bg-white rounded-lg p-4">
+                <ServerGroupManager 
+                  servers={servers}
+                  onGroupsChange={(groups) => {
+                    localStorage.setItem('serverGroups', JSON.stringify(groups))
+                  }}
+                />
               </div>
             )}
           </div>
 
           {/* Terminal Tabs & Display */}
-          <div className="col-span-2">
+          <div className="lg:col-span-2 order-1 lg:order-2">
             {activeSessions.size === 0 ? (
               <div className="bg-gray-50 rounded-lg p-8 text-center flex items-center justify-center" style={{ minHeight: '500px' }}>
                 <div>

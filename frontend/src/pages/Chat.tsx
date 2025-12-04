@@ -3,7 +3,8 @@ import { Send, Loader, Plus, Trash2, MessageSquare, Bot } from 'lucide-react'
 import ChatMessage from '../components/ChatMessage'
 // ✅ NOUVEAU: Importer le guide ChatIA
 import ChatIAGuide from '../components/ChatIAGuide'
-import { chatAPI } from '../services/api'
+import ServerSelector from '../components/ServerSelector'
+import { chatAPI, sshAPI } from '../services/api'
 import { socketService } from '../services/socket'
 import { useChat } from '../context/ChatContext'
 
@@ -14,6 +15,14 @@ interface Message {
   created_at: string
   conversation_id?: number
   user_id?: number
+}
+
+interface SSHServer {
+  id: number
+  name: string
+  host: string
+  port: number
+  username: string
 }
 
 export default function Chat() {
@@ -35,11 +44,16 @@ export default function Chat() {
   const [useSSHAgent, setUseSSHAgent] = useState(false)
   // ✅ NOUVEAU: State pour gérer l'onglet actif (conversations ou guide)
   const [activeTab, setActiveTab] = useState<'conversations' | 'guide'>('conversations')
+  const [servers, setServers] = useState<SSHServer[]>([])
+  const [selectedServerId, setSelectedServerId] = useState<number>()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const messages = currentConversationId ? getMessagesForConversation(currentConversationId) : []
 
   useEffect(() => {
+    // Load servers
+    loadServers()
+    
     if (conversations.length === 0) {
       loadConversations()
     } else if (currentConversationId && messages.length === 0) {
@@ -61,6 +75,17 @@ export default function Chat() {
       // socketService.disconnect()
     }
   }, [conversations.length, currentConversationId])
+
+  const loadServers = async () => {
+    try {
+      const response = await sshAPI.getServers()
+      const data = response.data.data || response.data.servers || response.data || []
+      setServers(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error loading servers:', error)
+      setServers([])
+    }
+  }
 
   useEffect(() => {
     scrollToBottom()
@@ -396,7 +421,7 @@ export default function Chat() {
 
               <div className="border-t border-gray-200 p-4 bg-white">
                 <div className="max-w-4xl mx-auto">
-                  <div className="mb-3 flex items-center space-x-2">
+                  <div className="mb-3 flex items-center justify-between">
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -409,6 +434,11 @@ export default function Chat() {
                         🤖 Mode Agent SSH (l'IA exécutera les commandes automatiquement)
                       </span>
                     </label>
+                    <ServerSelector
+                      servers={servers}
+                      selectedServerId={selectedServerId}
+                      onServerSelect={setSelectedServerId}
+                    />
                   </div>
                   <div className="flex items-end space-x-4">
                     <div className="flex-1">
