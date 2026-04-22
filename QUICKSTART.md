@@ -1,308 +1,287 @@
-# 🚀 Quick Start - AiSystant
+# Quick Start Guide
 
-Guide de démarrage rapide pour faire tourner AiSystant en moins de 5 minutes.
+Get AiSystant running in 5 minutes!
 
-## Prérequis
+## Prerequisites
 
-Avant de commencer, assurez-vous d'avoir :
+- Node.js 20+
+- Docker & Docker Compose
+- Git
+- An Anthropic API key (get one at https://console.anthropic.com)
 
-- ✅ Docker & Docker Compose installés
-- ✅ Node.js 18+ (optionnel, pour développement local)
-- ✅ Une clé API Anthropic ([obtenir ici](https://console.anthropic.com/))
-- ✅ Git installé
-
-## Installation rapide avec Docker (Recommandé)
-
-### Étape 1 : Cloner le repository
+## Step 1: Clone & Install
 
 ```bash
-git clone https://github.com/votre-username/aisystant.git
+# Clone repository
+git clone https://github.com/your-org/aisystant.git
 cd aisystant
+
+# Make setup script executable
+chmod +x setup.sh
+
+# Run setup (installs dependencies + creates env files)
+bash setup.sh
 ```
 
-### Étape 2 : Configuration de l'environnement
+## Step 2: Configure Environment
+
+Edit `backend/.env`:
 
 ```bash
-# Créer le fichier .env
-make setup-env
+# Get your API key from https://console.anthropic.com
+ANTHROPIC_API_KEY=sk-ant-xxx...
 
-# OU manuellement :
-cp .env.example .env
+# Database (Docker will handle this)
+DATABASE_URL=postgresql://aisystant:password@localhost:5432/aisystant
+
+# Generate a secure JWT secret
+JWT_SECRET=$(openssl rand -hex 32)
+echo $JWT_SECRET
+
+# Add it to .env
+# JWT_SECRET=your-secret-here
+
+# SSH settings (optional, for testing)
+SSH_KEY_PATH=~/.ssh/id_rsa
 ```
 
-**Éditer le fichier `.env` :**
+## Step 3: Start Services
+
+### Option A: Using Make (Recommended)
 
 ```bash
-nano .env  # ou vim, code, etc.
-```
-
-**Variables OBLIGATOIRES à remplir :**
-
-```env
-# Votre clé API Anthropic (OBLIGATOIRE)
-ANTHROPIC_API_KEY=sk-ant-votre-cle-ici
-
-# Secrets JWT (générer avec la commande ci-dessous)
-JWT_SECRET=votre_secret_jwt
-REFRESH_SECRET=votre_secret_refresh
-ENCRYPTION_KEY=votre_cle_chiffrement
-
-# Mot de passe base de données
-DB_PASSWORD=un_mot_de_passe_securise
-```
-
-**Générer les secrets :**
-
-```bash
-# Pour JWT_SECRET et REFRESH_SECRET (64 bytes)
-node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
-
-# Pour ENCRYPTION_KEY (32 bytes)
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-### Étape 3 : Lancer l'application
-
-```bash
-# Build et start
-make build
-make start
-
-# OU en une commande
-docker-compose up --build -d
-```
-
-### Étape 4 : Vérifier que tout fonctionne
-
-```bash
-# Vérifier les logs
-make logs
-
-# Ou vérifier la santé
-make health
-```
-
-**L'application est accessible sur :**
-- 🌐 Frontend : http://localhost:3000
-- 🔧 Backend API : http://localhost:3001
-
-### Étape 5 : Créer votre premier compte
-
-1. Ouvrez http://localhost:3000
-2. Cliquez sur "S'inscrire"
-3. Créez votre compte admin
-4. Connectez-vous
-
-### Étape 6 : Ajouter votre premier serveur
-
-Dans le chat, tapez :
-```
-Aide
-```
-
-Puis suivez les instructions pour ajouter un serveur.
-
-## Installation locale (Développement)
-
-Si vous préférez développer sans Docker :
-
-### Étape 1 : Prérequis locaux
-
-```bash
-# PostgreSQL
-brew install postgresql@15  # macOS
-# ou
-sudo apt install postgresql-15  # Linux
-
-# Redis
-brew install redis  # macOS
-# ou
-sudo apt install redis-server  # Linux
-```
-
-### Étape 2 : Démarrer les services
-
-```bash
-# PostgreSQL
-brew services start postgresql@15  # macOS
-# ou
-sudo systemctl start postgresql  # Linux
-
-# Redis
-brew services start redis  # macOS
-# ou
-sudo systemctl start redis  # Linux
-```
-
-### Étape 3 : Créer la base de données
-
-```bash
-createdb aisystant
-psql aisystant < backend/init.sql
-```
-
-### Étape 4 : Installer les dépendances
-
-```bash
-make install
-
-# OU manuellement :
-cd backend && npm install
-cd ../frontend && npm install
-```
-
-### Étape 5 : Configuration
-
-Créer `.env` comme expliqué plus haut, mais avec :
-
-```env
-DB_HOST=localhost
-REDIS_URL=redis://localhost:6379
-```
-
-### Étape 6 : Lancer en mode dev
-
-```bash
+# Start all services (API, Frontend, Admin)
 make dev
 
-# OU manuellement dans 2 terminaux :
-# Terminal 1
-cd backend && npm run dev
-
-# Terminal 2
-cd frontend && npm start
+# This runs:
+# - Backend API on http://localhost:3001
+# - Frontend UI on http://localhost:5173
+# - Admin Dashboard on http://localhost:3002
+# - PostgreSQL database in Docker
 ```
 
-## Commandes utiles
+### Option B: Individually
 
 ```bash
-# Voir les logs en temps réel
-make logs-follow
+# Terminal 1: Start database
+docker-compose up -d postgres
 
-# Arrêter les services
+# Terminal 2: Start backend API
+cd backend
+npm run dev
+
+# Terminal 3: Start frontend UI
+cd frontend
+npm run dev
+
+# Terminal 4 (optional): Start admin panel
+cd backend
+npm run admin
+```
+
+## Step 4: Access the App
+
+Open in your browser:
+
+- 🌐 **Frontend**: http://localhost:5173
+- 🔌 **API**: http://localhost:3001
+- 👨‍💼 **Admin**: http://localhost:3002
+
+## Step 5: First Run
+
+### Create Admin User
+
+```bash
+# Via API (if signup is enabled)
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com",
+    "password": "SecurePassword123!",
+    "name": "Admin User"
+  }'
+```
+
+### Add SSH Servers
+
+1. Go to http://localhost:3002 (Admin panel)
+2. Click "Servers" → "Add Server"
+3. Fill in:
+   - Hostname: `your-server.com`
+   - Username: `deploy` (or your user)
+   - Port: `22`
+   - SSH Key Path: `/home/you/.ssh/id_rsa`
+
+### Test It!
+
+1. Go to http://localhost:5173 (Frontend)
+2. Login with your admin credentials
+3. Type in chat: "Show me the uptime on [server-name]"
+4. AI will understand and execute the command!
+
+## Common Commands
+
+### Stop Everything
+
+```bash
 make stop
-
-# Redémarrer
-make restart
-
-# Nettoyer complètement
-make clean
-
-# Lancer les tests
-make test
-
-# Backup de la base de données
-make backup
-
-# Voir l'aide complète
-make help
+# Or: docker-compose down
 ```
 
-## Résolution de problèmes
+### View Logs
 
-### Le backend ne démarre pas
-
-**Vérifier les logs :**
 ```bash
-make logs-backend
+# Backend logs
+docker-compose logs -f backend
+
+# Frontend logs (in its terminal)
+# Ctrl+C
+
+# Database logs
+docker-compose logs -f postgres
 ```
 
-**Problèmes courants :**
-- ❌ `ANTHROPIC_API_KEY` non définie
-  - ✅ Vérifier le fichier `.env`
-- ❌ Connexion à la base de données échoue
-  - ✅ Vérifier que PostgreSQL est démarré
-  - ✅ Vérifier `DATABASE_URL` dans `.env`
-
-### Le frontend ne charge pas
-
-**Vérifier les logs :**
-```bash
-make logs-frontend
-```
-
-**Problèmes courants :**
-- ❌ CORS errors
-  - ✅ Vérifier `FRONTEND_URL` et `CORS_ORIGIN` dans `.env`
-- ❌ Can't connect to backend
-  - ✅ Vérifier que le backend tourne sur le bon port
-
-### Port déjà utilisé
-
-Si un port (3000, 3001, 5432, 6379) est déjà utilisé :
+### Reset Database
 
 ```bash
-# Trouver le processus
-lsof -i :3000  # remplacer 3000 par le port concerné
-
-# Tuer le processus
-kill -9 <PID>
-```
-
-Ou modifier les ports dans `docker-compose.yml` et `.env`.
-
-### Effacer et recommencer
-
-```bash
-# Tout nettoyer
-make clean
-
-# Supprimer les volumes Docker
+# Delete and recreate
 docker-compose down -v
-
-# Rebuilder from scratch
-make build
-make start
+docker-compose up -d postgres
+npm run migrate
 ```
 
-## Configuration avancée
+### Clear Cache
 
-### Ajouter un serveur SSH
-
-Dans l'interface, allez dans "Paramètres" > "Serveurs" > "Ajouter"
-
-Ou via le chat :
-```
-Ajoute un serveur nommé web-01 avec IP 192.168.1.10
+```bash
+make clean
+# Removes node_modules from frontend and backend
 ```
 
-### Configurer les notifications
+## Troubleshooting
 
-Éditer `.env` :
-```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=votre@email.com
-SMTP_PASSWORD=votre_mot_de_passe_app
+### "Port already in use"
+
+```bash
+# Change ports in Makefile or .env
+BACKEND_PORT=3003 npm run dev
+VITE_PORT=5174 npm run dev
 ```
 
-### Activer le monitoring
+### "Database connection refused"
 
-```env
-SENTRY_DSN=https://votre-dsn@sentry.io/projet
+```bash
+# Check if postgres container is running
+docker-compose ps
+
+# If not running, start it
+docker-compose up -d postgres
+
+# Wait 10 seconds for startup
+sleep 10
+
+# Run migrations
+npm run migrate
 ```
 
-## Prochaines étapes
+### "Cannot find module"
 
-1. **Lire la documentation** : [README.md](README.md)
-2. **Explorer les commandes** : Tapez "Aide" dans le chat
-3. **Ajouter vos serveurs** : Configurez votre infrastructure
-4. **Tester les features** : Essayez les différentes commandes
-5. **Consulter AGENTS.md** : Comprendre comment l'IA est utilisée
+```bash
+# Reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+```
 
-## Support
+### "SSH connection failed"
 
-- 📖 Documentation : [README.md](README.md)
-- 🐛 Bug reports : [GitHub Issues](https://github.com/votre-username/aisystant/issues)
-- 💬 Questions : [Discord](https://discord.gg/aisystant)
+1. Verify SSH key exists: `ls ~/.ssh/id_rsa`
+2. Verify permissions: `chmod 600 ~/.ssh/id_rsa`
+3. Check SSH_KEY_PATH in `.env`
+4. Test SSH manually: `ssh -i ~/.ssh/id_rsa user@server.com`
 
----
+### "API key error"
 
-**Besoin d'aide ?** Consultez les fichiers :
-- `AGENTS.md` - Usage de l'IA
-- `conception.md` - Architecture détaillée
-- `benchmarks.md` - Comparaison des outils IA
+1. Go to https://console.anthropic.com
+2. Create or copy your API key
+3. Update `backend/.env`: `ANTHROPIC_API_KEY=sk-ant-xxx...`
+4. Restart backend: `npm run dev`
 
----
+## Next Steps
 
-**Bon démarrage avec AiSystant ! 🚀**
+### Learn More
+
+- 📖 [Full Documentation](../docs/)
+- 🏗️ [Architecture Guide](../docs/ARCHITECTURE.md)
+- 🔌 [API Reference](../docs/API.md)
+- 🚀 [Deployment Guide](../docs/DEPLOYMENT.md)
+- 🔒 [Security Policy](../docs/SECURITY.md)
+
+### Development
+
+- Look at [CONTRIBUTING.md](../docs/CONTRIBUTING.md)
+- Check out the [Makefile](../Makefile)
+- Explore `backend/src/` for API logic
+- Explore `frontend/src/` for UI components
+
+### Deployment
+
+To deploy to production:
+
+1. Follow [Deployment Guide](../docs/DEPLOYMENT.md)
+2. Set up PostgreSQL server
+3. Configure reverse proxy (Nginx/Apache)
+4. Set up SSL certificates
+5. Configure backups and monitoring
+
+## Commands Reference
+
+```bash
+# Development
+make dev              # Start all services
+make install          # Install dependencies
+make build            # Build for production
+make test             # Run tests
+make lint             # Run linters
+
+# Docker
+make docker           # Build and run with Docker
+docker-compose ps     # Show running containers
+docker-compose logs   # View logs
+docker-compose down   # Stop all services
+
+# Backend
+cd backend
+npm run dev           # Development mode
+npm run build         # Compile TypeScript
+npm run start         # Production mode
+npm run admin         # Admin API server
+npm run migrate       # Database migrations
+npm test              # Run tests
+
+# Frontend
+cd frontend
+npm run dev           # Vite dev server
+npm run build         # Build production bundle
+npm run preview       # Preview production build
+npm run lint          # ESLint
+npm test              # Run tests
+```
+
+## Getting Help
+
+- 📧 Email: support@aisystant.dev
+- 💬 GitHub Discussions: [Link]
+- 🐛 Report Issues: [GitHub Issues]
+- 📚 Documentation: See `docs/` folder
+
+## What's Next?
+
+Once you have it running:
+
+1. **Explore the UI**: Chat with AI, execute commands
+2. **Add more servers**: Build your infrastructure
+3. **Create server groups**: Organize by environment
+4. **Set up users**: Invite your team
+5. **Configure monitoring**: Track command history
+6. **Deploy to production**: Follow deployment guide
+
+Happy automating! 🚀

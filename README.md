@@ -2,298 +2,307 @@
 
 <div align="center">
 
-![AiSystant Logo](https://via.placeholder.com/200x200/00D9FF/0A0E1A?text=AiSystant)
+![AiSystant](https://img.shields.io/badge/AiSystant-Infrastructure%20AI-purple?style=for-the-badge)
 
-**Parlez à votre infrastructure en langage naturel**
+**Parlez à votre infrastructure en langage naturel avec l'IA**
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-cyber--cyan.svg)](LICENSE)
-[![Node.js](https://img.shields.io/badge/Node.js-20+-cyber--green.svg)](https://nodejs.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-green.svg)](https://nodejs.org)
 [![React](https://img.shields.io/badge/React-18.2-61DAFB.svg)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6.svg)](https://www.typescriptlang.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://docker.com)
-[![Claude AI](https://img.shields.io/badge/Claude-Sonnet%204.5-purple.svg)](https://anthropic.com)
-
-[Démarrage Rapide](#-démarrage-rapide) • [Documentation](#-documentation) • [Démo](#-démo) • [Contribuer](#-contribuer)
+[![Claude AI](https://img.shields.io/badge/Claude-Sonnet-purple.svg)](https://anthropic.com)
 
 </div>
 
 ---
 
-## 📖 À Propos
+## 🎯 Vue d'ensemble
 
-**AiSystant** est une plateforme moderne de gestion d'infrastructure qui utilise l'**IA générative** pour transformer le langage naturel en commandes système. Dites simplement "redémarre nginx sur web-01" et laissez l'IA faire le reste !!!
+**AiSystant** est une plateforme moderne de gestion d'infrastructure qui utilise l'**IA générative (Claude Sonnet)** pour convertir le langage naturel en commandes système sécurisées et exécutables.
 
-### ✨ Fonctionnalités Principales
-
-🗣️ **Interface Conversationnelle**
-- Chat en langage naturel (français/anglais)
-- Compréhension contextuelle des commandes
-- Confirmations intelligentes pour actions critiques
-
-🧠 **IA Puissante (Claude Sonnet 4.5)**
-- Parsing d'intentions avancé
-- Extraction automatique de paramètres
-- Évaluation des risques
-
-🖥️ **Gestion Multi-Serveurs**
-- Support SSH natif
-- Tags et groupes de serveurs
-- Monitoring temps réel
-
-📊 **Dashboard Intuitif**
-- Vue d'ensemble de l'infrastructure
-- Métriques en temps réel
-- Historique des commandes
-
-🔒 **Sécurité Robuste**
-- Authentification JWT
-- Permissions par rôle (Admin/Operator/Viewer)
-- Audit trail complet
-- Confirmations pour actions à risque
+### Cas d'usage
+- 💬 Demander "redémarre nginx sur web-01" → exécution automatique
+- 📊 "Affiche l'utilisation CPU de tous les serveurs" → dashboard temps réel
+- 🔍 "Cherche les services down" → diagnostic automatique
+- 🚀 "Déploie la version 2.0 sur prod" → pipeline de déploiement
 
 ---
 
-## 🚀 Démarrage Rapide
+## ⚡ Démarrage Rapide
 
 ### Prérequis
+- Node.js 20+
+- Docker & Docker Compose
+- Clé API Anthropic (Claude)
+- SSH access aux serveurs
 
-- Docker 20.10+
-- Docker Compose 2.0+
-- Clé API Anthropic ([obtenir une clé](https://console.anthropic.com))
-
-### Installation en 3 minutes
+### Installation rapide
 
 ```bash
-# 1. Cloner le projet
-git clone https://github.com/votre-nom/chatops-commander.git
+# Cloner le repo
+git clone <repo-url>
 cd chatops-commander
 
-# 2. Installation automatique
-chmod +x install.sh
-./install.sh
+# Setup avec make
+make install
 
-# 3. Configurer la clé API
-nano .env
-# Modifier: ANTHROPIC_API_KEY=sk-ant-votre-clé-ici
-
-# 4. Démarrer
-make start
+# Ou manuellement:
+cd backend && npm install && cd ../frontend && npm install
 ```
 
-🎉 **C'est prêt !** Accédez à http://localhost:3000
+### Lancer le projet
 
-**Identifiants de démo :**
-- Email: `admin@chatops.local`
-- Password: `admin123`
+```bash
+# Développement (3 services)
+make dev
+
+# Ou individuellement:
+cd backend && npm run dev      # API: port 3001
+cd frontend && npm run dev     # UI: port 5173
+cd backend && npm run admin    # Admin: port 3002
+```
+
+**Accès:**
+- 🌐 Frontend: `http://localhost:5173`
+- 🔌 API: `http://localhost:3001`
+- 👨‍💼 Admin: `http://localhost:3002`
+
+### Variables d'environnement
+
+```bash
+# backend/.env
+ANTHROPIC_API_KEY=sk-xxx
+DATABASE_URL=postgresql://...
+JWT_SECRET=your-secret-key
+SSH_KEY_PATH=/path/to/key
+
+# frontend/.env
+VITE_API_URL=http://localhost:3001
+```
 
 ---
 
-## 💬 Exemples d'Utilisation
+## 📁 Structure du Projet
 
 ```
-Vous : Status de tous les serveurs
-Bot  : 📊 3 serveurs : 2 en ligne, 1 hors ligne
+├── frontend/              # Interface React + Vite
+│   ├── src/
+│   │   ├── pages/        # Pages (Chat, SSH, Admin, Landing)
+│   │   ├── components/   # Composants React
+│   │   ├── context/      # État global (ChatContext, SSHContext)
+│   │   └── services/     # Appels API
+│   └── package.json
+│
+├── backend/              # API Node.js + Express
+│   ├── src/
+│   │   ├── server.ts     # Point d'entrée API
+│   │   ├── admin-api-server.ts  # API Admin
+│   │   ├── routes/       # Endpoints (chat, ssh, admin, stats)
+│   │   ├── services/     # Logique métier
+│   │   │   ├── AIEngine.ts       # Integration Claude
+│   │   │   ├── SSHTerminalService.ts
+│   │   │   └── PersistentShell.ts
+│   │   ├── controllers/  # Requêtes HTTP
+│   │   ├── middleware/   # Auth, logging
+│   │   └── config/       # Base de données, migrations
+│   └── package.json
+│
+├── admin-panel/          # Panel d'administration web
+├── docs/                 # Documentation
+├── docker-compose.yml    # Déploiement Docker
+└── Makefile             # Commandes développement
 
-Vous : CPU de web-01 ?
-Bot  : 🖥️ CPU web-01 : 23% (normal)
-
-Vous : Redémarre nginx sur web-01
-Bot  : ⚠️  Action critique - Confirmer ?
-Vous : Oui
-Bot  : ✅ nginx redémarré avec succès (1.8s)
-
-Vous : Logs des 2 dernières heures
-Bot  : 📝 [Affiche les logs avec timestamps]
 ```
 
 ---
 
 ## 🏗️ Architecture
 
+### Stack Technique
+
+| Couche | Tech |
+|--------|------|
+| **Frontend** | React 18 + TypeScript + Vite + TailwindCSS |
+| **Backend** | Node.js + Express + TypeScript |
+| **AI** | Claude Sonnet (Anthropic) |
+| **Base de données** | PostgreSQL + TypeORM |
+| **SSH** | node-ssh + socket.io |
+| **Auth** | JWT + bcrypt |
+| **Deploy** | Docker + Docker Compose |
+
+### Flux Principal
+
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    TIER 1 : Frontend                     │
-│                React + TypeScript + Tailwind             │
-│                 Chat Interface + Dashboard                │
-└────────────────────┬────────────────────────────────────┘
-                     │ REST API + WebSocket
-┌────────────────────▼────────────────────────────────────┐
-│                    TIER 2 : Backend                      │
-│              Node.js + Express + TypeScript              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐              │
-│  │ AIEngine │  │   Auth   │  │   SSH    │              │
-│  │ (Claude) │  │  (JWT)   │  │  Client  │              │
-│  └──────────┘  └──────────┘  └──────────┘              │
-└────────────┬───────────────┬────────────────────────────┘
-             │               │
-    ┌────────▼──────┐   ┌───▼─────────┐
-    │  PostgreSQL   │   │    Redis    │
-    │   (Données)   │   │   (Cache)   │
-    └───────────────┘   └─────────────┘
+User Input (Langage naturel)
+    ↓
+Frontend Chat UI
+    ↓ HTTP POST /api/chat
+Backend Express Server
+    ↓
+AIEngine (Claude Sonnet)
+    ↓ Parsing d'intention
+Security Check → SSH Command
+    ↓ Confirmation utilisateur
+    ↓
+SSHTerminalService (exécution)
+    ↓
+Résultats en temps réel
+    ↓ WebSocket
+Frontend Terminal Emulator
+```
+
+---
+
+## 🔑 Fonctionnalités Principales
+
+### 💬 Chat Intelligent
+- Interface conversationnelle fluide
+- Support multilingue (FR/EN)
+- Historique persistant
+- Mentionner serveurs/commandes
+
+### 🖥️ Terminal Multi-Serveurs
+- Onglets SSH multiples
+- Exécution parallèle
+- Auto-completion
+- Historique des commandes
+
+### 🧠 IA Avancée
+- Compréhension contextuelle
+- Extraction de paramètres
+- Évaluation des risques
+- Suggestions intelligentes
+
+### 👥 Gestion Multi-Utilisateurs
+- Authentification JWT
+- Rôles: Admin / Operator / Viewer
+- Permissions granulaires
+- Audit des actions
+
+### 📊 Dashboard Admin
+- Statistiques en temps réel
+- Monitoring serveurs
+- Gestion des utilisateurs
+- Historique des commandes
+
+### 🔒 Sécurité
+- Confirmations critiques
+- Logs d'audit complets
+- Rate limiting
+- Validations strictes
+
+---
+
+## 🚀 Développement
+
+### Scripts disponibles
+
+**Backend**
+```bash
+npm run dev      # Développement avec hot-reload
+npm run build    # Compilation TypeScript
+npm run start    # Production
+npm run admin    # Panel admin sur port 3002
+npm run migrate  # Migrations base de données
+npm test         # Tests unitaires
+```
+
+**Frontend**
+```bash
+npm run dev      # Vite dev server
+npm run build    # Build production
+npm run preview  # Preview build
+npm run lint     # ESLint
+```
+
+### Makefile Commands
+
+```bash
+make install     # npm install frontend + backend
+make dev         # Lancer tous les services (dev)
+make build       # Build frontend + backend
+make docker      # Docker build & run
+make clean       # Nettoyer node_modules
 ```
 
 ---
 
 ## 📚 Documentation
 
-| Document | Description |
-|----------|-------------|
-| [**GUIDE_COMPLET.md**](GUIDE_COMPLET.md) | Guide d'installation et d'utilisation détaillé |
-| [**AGENTS.md**](AGENTS.md) | Utilisation de l'IA (Claude, Copilot, GPT-4) |
-| [**conception.md**](conception.md) | Architecture technique complète |
-| [**CHANGELOG.md**](CHANGELOG.md) | Historique des versions |
-| [**benchmarks.md**](benchmarks.md) | Comparaison des outils IA |
-| [**prompts.md**](prompts.md) | Tous les prompts utilisés |
+| Document | Contenu |
+|----------|---------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Design système détaillé |
+| [API.md](docs/API.md) | Endpoints et spécifications |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Déploiement production |
+| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Guide de contribution |
+| [SECURITY.md](docs/SECURITY.md) | Modèle de sécurité |
 
 ---
 
-## 🛠️ Stack Technique
+## 🔌 Intégrations & Extensions
 
-### Frontend
-- **React** 18.2 - Interface utilisateur
-- **TypeScript** 5 - Type safety
-- **Tailwind CSS** 3.4 - Styling moderne
-- **Zustand** - State management
-- **Socket.io** - WebSocket temps réel
+### APIs Supportées
+- SSH/SFTP natif
+- Sockets.io (temps réel)
+- REST API
+- GraphQL (futur)
 
-### Backend
-- **Node.js** 20 - Runtime JavaScript
-- **Express** 4.18 - Framework web
-- **TypeScript** 5 - Type safety
-- **PostgreSQL** 15 - Base de données
-- **Redis** 7 - Cache et sessions
-- **node-ssh** - Client SSH
-- **Anthropic SDK** - Intégration Claude AI
-
-### DevOps
-- **Docker** & **Docker Compose** - Containerisation
-- **Nginx** - Reverse proxy
-- **Jest** - Tests unitaires
-- **ESLint** & **Prettier** - Qualité de code
+### Services Intégrables
+- Slack / Teams notifications
+- Prometheus monitoring
+- ELK stack logs
+- GitHub Actions CI/CD
 
 ---
 
-## 🎯 Roadmap
+## 🐛 Troubleshooting
 
-### ✅ Version 1.0 (Actuelle)
-- [x] Interface chat conversationnelle
-- [x] Parsing intelligent avec Claude
-- [x] Gestion multi-serveurs SSH
-- [x] Dashboard temps réel
-- [x] Authentification & permissions
-- [x] Tests unitaires (87% coverage)
-- [x] Documentation complète
+### Port déjà utilisé
+```bash
+# Changer les ports
+BACKEND_PORT=3003 npm run dev
+VITE_PORT=5174 npm run dev
+```
 
-### 🚧 Version 1.1 (Q1 2025)
-- [ ] Support Kubernetes
-- [ ] Intégrations (Slack, Discord, Teams)
-- [ ] Playbooks automatisés
-- [ ] Analytics avancés avec ML
+### Erreur de connexion SSH
+```bash
+# Vérifier la clé
+ssh-add ~/.ssh/id_rsa
+# Ou spécifier le chemin
+SSH_KEY_PATH=/path/to/key npm run dev
+```
 
-### 🔮 Version 2.0 (Q2 2025)
-- [ ] Multi-cloud (AWS, GCP, Azure)
-- [ ] Prédiction de pannes par IA
-- [ ] Marketplace de plugins
-- [ ] Application mobile
-
----
-
-## 🤝 Contribuer
-
-Les contributions sont les bienvenues ! Voici comment participer :
-
-1. **Fork** le projet
-2. **Créez** une branche : `git checkout -b feature/ma-feature`
-3. **Committez** : `git commit -m "Ajout de ma feature"`
-4. **Push** : `git push origin feature/ma-feature`
-5. **Ouvrez** une Pull Request
-
-### Guidelines
-
-- Suivre les conventions de code (ESLint + Prettier)
-- Ajouter des tests pour les nouvelles fonctionnalités
-- Mettre à jour la documentation
-- Respecter le code of conduct
+### Base de données
+```bash
+# Migrations
+npm run migrate
+# Reset DB
+npm run migrate -- --reset
+```
 
 ---
 
-## 📊 Statistiques du Projet
+## 🤝 Contribution
 
-- **~8000** lignes de code
-- **42** fichiers
-- **87%** test coverage
-- **25+** composants React
-- **15** routes API
-- **7** fichiers de documentation
-
----
-
-## 🏆 Utilisation de l'IA Générative
-
-Ce projet a été développé en utilisant massivement l'IA générative :
-
-- **~75%** du code généré par **GitHub Copilot**
-- **Architecture** conçue avec **Claude Sonnet 4.5**
-- **Tests** générés par **GPT-4**
-- **Visuels** créés avec **DALL-E 3**
-- **Documentation** assistée par **Claude**
-
-Voir [AGENTS.md](AGENTS.md) pour tous les détails.
+1. Fork le repo
+2. Créer une branche (`git checkout -b feature/amazing`)
+3. Commit (`git commit -m "Add amazing feature"`)
+4. Push (`git push origin feature/amazing`)
+5. Ouvrir une Pull Request
 
 ---
 
-## 📝 Licence
+## 📄 License
 
-Ce projet est sous licence **MIT**. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
-
----
-
-## 👨‍💻 Auteur
-
-**Tom Ribero**
-- GitHub: [@Tom-rib](https://github.com/Tom-rib)
-- LinkedIn: [Votre Profil](https://www.linkedin.com/in/tom-ribero-462ba2339)
-- Email: tom.ribero@laplateforme.io
+MIT © 2025 AiSystant Team
 
 ---
 
-## 🙏 Remerciements
+## 📧 Support
 
-- **Anthropic** pour l'API Claude
-- **GitHub** pour Copilot
-- **La communauté open-source**
+- 📖 [Documentation](docs/)
+- 🐛 [Issues](https://github.com/issues)
+- 💬 [Discussions](https://github.com/discussions)
+- 📧 [Contact](mailto:support@aisystant.dev)
 
----
-
-## 📞 Support
-
-- 📖 [Documentation](GUIDE_COMPLET.md)
-- 🐛 [Signaler un bug](https://github.com/votre-nom/chatops-commander/issues)
-- 💬 [Discord](https://discord.gg/votre-lien)
-- 📧 [Email](mailto:support@chatops-commander.io)
-
----
-
-<div align="center">
-
-**⭐ Si ce projet vous plaît, donnez-lui une étoile sur GitHub ! ⭐**
-
-Made with ❤️ and 🤖 AI
-
-</div>
-
-## Licence et droits d'utilisation
-
-Copyright (c) 2025 Tom Ribero
-
-Tous droits réservés.
-
-Ce logiciel et son code source sont la propriété exclusive de l’auteur.  
-Aucune partie de ce projet ne peut être utilisée, copiée, modifiée, distribuée,
-hébergée, intégrée ou revendue sans une autorisation écrite explicite de
-l’auteur.
-
-Pour toute utilisation professionnelle ou commerciale, une licence payante est
-nécessaire.  
-Merci de contacter : tom.ribero@laplateforme.io pour obtenir une licence
-commerciale ou un devis d’intégration.

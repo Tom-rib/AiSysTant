@@ -1,0 +1,93 @@
+# GitHub Copilot Agent Configuration for AiSystant
+
+## Project Overview
+AiSystant is an AI-powered infrastructure management platform that converts natural language to secure SSH commands using Claude Sonnet.
+
+## Technology Stack
+- **Frontend**: React 18 + TypeScript + Vite + TailwindCSS
+- **Backend**: Node.js + Express + TypeScript
+- **Database**: PostgreSQL + TypeORM
+- **AI**: Claude Sonnet (Anthropic API)
+- **Realtime**: Socket.io
+- **Infrastructure**: Docker + Docker Compose
+
+## Key Directories
+- `frontend/src` - React components, pages, services, context
+- `backend/src` - Express server, routes, controllers, services
+- `admin-panel/` - Admin dashboard interface
+- `docs/` - Project documentation
+
+## Development Setup
+```bash
+# Install dependencies
+cd backend && npm install
+cd ../frontend && npm install
+
+# Start development servers
+make dev
+# Or individually:
+cd backend && npm run dev      # API: http://localhost:3001
+cd frontend && npm run dev     # UI: http://localhost:5173
+cd backend && npm run admin    # Admin: http://localhost:3002
+```
+
+## Core Services
+- **AIEngine.ts** - Claude integration and prompt engineering
+- **SSHTerminalService.ts** - SSH connection management
+- **PersistentShell.ts** - Command execution with persistence
+- **TerminalSessionManager.ts** - Session lifecycle management
+
+## Important Environment Variables
+- `ANTHROPIC_API_KEY` - Claude API key
+- `DATABASE_URL` - PostgreSQL connection
+- `JWT_SECRET` - Session authentication
+- `SSH_KEY_PATH` - SSH private key location
+
+## Key API Endpoints
+- POST `/api/chat` - Send chat messages to Claude
+- POST `/api/ssh/command` - Execute SSH commands
+- GET `/api/stats` - Server statistics
+- GET `/api/admin/users` - User management
+
+## Testing & Quality
+```bash
+# Run tests
+npm test
+
+# Build
+npm run build
+
+# Type checking
+tsc --noEmit
+```
+
+## Common Tasks
+1. **Add new SSH command**: Modify `SSHTerminalService.ts`
+2. **Update AI prompts**: Edit `AIEngine.ts` system prompts
+3. **Add UI feature**: Create component in `frontend/src/components/`
+4. **Database schema change**: Create migration in `backend/migrations/`
+
+## Performance Considerations
+- WebSocket for real-time terminal updates
+- Connection pooling for PostgreSQL
+- Claude token usage optimization
+- SSH connection caching
+
+## Security Notes
+- All commands require user confirmation
+- Audit logging for all actions
+- JWT token validation on protected routes
+- SSH key encryption at rest
+
+## Documentation Files
+- `docs/ARCHITECTURE.md` - System design
+- `docs/API.md` - API specification
+- `docs/DEPLOYMENT.md` - Production deployment
+- `docs/CONTRIBUTING.md` - Contribution guidelines
+- `docs/SECURITY.md` - Security model
+
+## Debugging
+- Backend logs: `BACKEND_LOG_LEVEL=debug npm run dev`
+- Frontend DevTools: `http://localhost:5173`
+- Admin dashboard: `http://localhost:3002`
+- Database: PostgreSQL on port 5432 (via docker-compose)
