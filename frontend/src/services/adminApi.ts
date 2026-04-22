@@ -146,7 +146,7 @@ export const adminApi = {
     status?: string
   ): Promise<{ invoices: Invoice[]; total: number; page: number }> => {
     try {
-      const params = { page, limit }
+      const params: any = { page, limit }
       if (status) params.status = status
       const response = await api.get('/invoices', { params })
       return response.data

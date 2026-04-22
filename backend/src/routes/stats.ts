@@ -1,11 +1,11 @@
-import { Router } from 'express';
+import { Router, RequestHandler } from 'express';
 import { StatsController } from '../controllers/StatsController';
 import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
 // Toutes les routes nécessitent une authentification
-router.use(authenticate);
+router.use(authenticate as RequestHandler);
 
 /**
  * @route   GET /api/stats

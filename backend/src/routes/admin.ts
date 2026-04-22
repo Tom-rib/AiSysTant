@@ -1,15 +1,11 @@
-import { Router, Response } from 'express'
+import { Router, Response, RequestHandler } from 'express'
 import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth'
 import { AdminService } from '../services/adminService'
 
 const router = Router()
 
-// Protect all admin routes - d'abord authentifier, puis vérifier le rôle admin
-router.use(authenticate)
-router.use(requireAdmin)
-
 // GET /api/admin/stats
-router.get('/stats', async (req: AuthRequest, res: Response) => {
+router.get('/stats', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const stats = await AdminService.getStats()
     res.json(stats)
@@ -19,7 +15,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/admin/users
-router.get('/users', async (req: AuthRequest, res: Response) => {
+router.get('/users', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 50
@@ -37,7 +33,7 @@ router.get('/users', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/admin/users/:userId
-router.get('/users/:userId', async (req: AuthRequest, res: Response) => {
+router.get('/users/:userId', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const userId = parseInt(req.params.userId)
     if (isNaN(userId)) {
@@ -52,7 +48,7 @@ router.get('/users/:userId', async (req: AuthRequest, res: Response) => {
 })
 
 // PUT /api/admin/users/:userId
-router.put('/users/:userId', async (req: AuthRequest, res: Response) => {
+router.put('/users/:userId', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const userId = parseInt(req.params.userId)
     const { plan_id } = req.body
@@ -72,7 +68,7 @@ router.put('/users/:userId', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/admin/users/:userId/ban
-router.post('/users/:userId/ban', async (req: AuthRequest, res: Response) => {
+router.post('/users/:userId/ban', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const userId = parseInt(req.params.userId)
     const { reason } = req.body
@@ -93,7 +89,7 @@ router.post('/users/:userId/ban', async (req: AuthRequest, res: Response) => {
 })
 
 // DELETE /api/admin/users/:userId
-router.delete('/users/:userId', async (req: AuthRequest, res: Response) => {
+router.delete('/users/:userId', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const userId = parseInt(req.params.userId)
 
@@ -113,7 +109,7 @@ router.delete('/users/:userId', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/admin/billing
-router.get('/billing', async (req: AuthRequest, res: Response) => {
+router.get('/billing', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const stats = await AdminService.getBillingStats()
     res.json(stats)
@@ -123,7 +119,7 @@ router.get('/billing', async (req: AuthRequest, res: Response) => {
 })
 
 // GET /api/admin/invoices
-router.get('/invoices', async (req: AuthRequest, res: Response) => {
+router.get('/invoices', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 50
@@ -137,7 +133,7 @@ router.get('/invoices', async (req: AuthRequest, res: Response) => {
 })
 
 // POST /api/admin/invoices/:invoiceId/refund
-router.post('/invoices/:invoiceId/refund', async (req: AuthRequest, res: Response) => {
+router.post('/invoices/:invoiceId/refund', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const invoiceId = parseInt(req.params.invoiceId)
     const { reason } = req.body
@@ -154,7 +150,7 @@ router.post('/invoices/:invoiceId/refund', async (req: AuthRequest, res: Respons
 })
 
 // GET /api/admin/servers
-router.get('/servers', async (req: AuthRequest, res: Response) => {
+router.get('/servers', authenticate as RequestHandler, requireAdmin as RequestHandler, async (req: AuthRequest, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 50

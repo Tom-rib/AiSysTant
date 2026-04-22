@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Installer les dépendances nécessaires pour les modules natifs
 RUN apk add --no-cache python3 make g++

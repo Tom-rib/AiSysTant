@@ -12,7 +12,6 @@ export const ProfileDropdown: React.FC = () => {
   const user = {
     email: authUser?.email || 'user@example.com',
     username: authUser?.username || 'User',
-    tier: authUser?.tier || 'Starter',
   };
 
   useEffect(() => {
@@ -50,9 +49,9 @@ export const ProfileDropdown: React.FC = () => {
           <div className="px-4 py-3 border-b border-gray-200">
             <p className="text-sm font-semibold">{user.username}</p>
             <p className="text-xs text-gray-500">{user.email}</p>
-            <span className="inline-block mt-2 px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded">
+            {/* <span className="inline-block mt-2 px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded">
               {user.tier}
-            </span>
+            </span> */}
           </div>
 
           <div className="py-2">

@@ -94,7 +94,7 @@ export default function Chat() {
 
   const loadServerGroups = async () => {
     try {
-      const response = await sshAPI.getServerGroups?.() || { data: { data: [] } }
+      const response = (sshAPI as any).getServerGroups?.() || { data: { data: [] } }
       const groups = response.data?.data || response.data?.groups || []
       setServerGroups(Array.isArray(groups) ? groups : [])
     } catch (error) {
