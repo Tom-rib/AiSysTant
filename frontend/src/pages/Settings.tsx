@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Settings as SettingsIcon, Eye, EyeOff, Save, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { api } from '../services/api'
 
 export default function Settings() {
   const { user } = useAuth()
@@ -18,20 +19,11 @@ export default function Settings() {
 
   const loadSettings = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-      const response = await fetch(`${apiUrl}/api/settings/claude-key`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+      const response = await api.get('/settings/claude-key')
       
-      if (response.ok) {
-        const data = await response.json()
-        // Ne pas afficher la clé complète pour la sécurité, juste une indication
-        if (data.hasKey) {
-          setClaudeApiKey('••••••••••••••••••••••••••••••••••')
-          setHasApiKey(true)
-        }
+      if (response.data.hasKey) {
+        setClaudeApiKey('••••••••••••••••••••••••••••••••••')
+        setHasApiKey(true)
       }
     } catch (error) {
       console.error('Erreur lors du chargement des paramètres:', error)
@@ -52,27 +44,16 @@ export default function Settings() {
 
     setIsLoading(true)
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-      const response = await fetch(`${apiUrl}/api/settings/claude-key`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({ claudeApiKey: claudeApiKey.trim() })
-      })
+      const response = await api.post('/settings/claude-key', { claudeApiKey: claudeApiKey.trim() })
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         setMessage({ type: 'success', text: 'Clé API Claude sauvegardée avec succès' })
         setClaudeApiKey('••••••••••••••••••••••••••••••••••')
         setHasChanges(false)
         setHasApiKey(true)
-      } else {
-        const error = await response.json()
-        setMessage({ type: 'error', text: error.message || 'Erreur lors de la sauvegarde' })
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: `Erreur: ${error.message}` })
+      setMessage({ type: 'error', text: error.response?.data?.message || `Erreur: ${error.message}` })
     } finally {
       setIsLoading(false)
     }
@@ -86,26 +67,17 @@ export default function Settings() {
 
     setIsLoading(true)
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-      const response = await fetch(`${apiUrl}/api/settings/claude-key`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
+      const response = await api.delete('/settings/claude-key')
 
-      if (response.ok) {
+      if (response.status === 200) {
         setMessage({ type: 'success', text: 'Clé API Claude supprimée avec succès' })
         setClaudeApiKey('')
         setHasChanges(false)
         setHasApiKey(false)
         setShowDeleteConfirm(false)
-      } else {
-        const error = await response.json()
-        setMessage({ type: 'error', text: error.message || 'Erreur lors de la suppression' })
       }
     } catch (error: any) {
-      setMessage({ type: 'error', text: `Erreur: ${error.message}` })
+      setMessage({ type: 'error', text: error.response?.data?.message || `Erreur: ${error.message}` })
     } finally {
       setIsLoading(false)
     }
