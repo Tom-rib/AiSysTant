@@ -56,6 +56,8 @@ const io = new SocketIOServer(httpServer, {
         'http://127.0.0.1:3000',
         'http://192.168.136.149:5173',
         'http://192.168.136.149:3000',
+        'http://192.168.136.183:5173',
+        'http://192.168.136.183:3000',
         'http://172.18.0.1:5173',
         'http://172.18.0.1:3000',
         'http://192.168.1.100:5173',
@@ -93,7 +95,8 @@ app.use(helmet({
 // CORS - Configuration correcte pour plusieurs origines
 const allowedOrigins = [
   'http://localhost:5173',
-  'http://192.168.136.149:5173'
+  'http://192.168.136.149:5173',
+  'http://192.168.136.183:5173'
 ];
 
 app.use(cors({
