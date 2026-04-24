@@ -58,8 +58,8 @@ export const chatAPI = {
   getMessages: (conversationId: string) =>
     api.get(`/chat/conversations/${conversationId}/messages`),
   
-  sendMessage: (conversationId: number, content: string, useSSHAgent?: boolean) =>
-    api.post(`/chat/conversations/${conversationId}/messages`, { content, useSSHAgent }),
+  sendMessage: (conversationId: number, content: string, useSSHAgent?: boolean, serverIds?: number[]) =>
+    api.post(`/chat/conversations/${conversationId}/messages`, { content, useSSHAgent, serverIds }),
   
   createConversation: (title: string) =>
     api.post('/chat/conversations', { title }),

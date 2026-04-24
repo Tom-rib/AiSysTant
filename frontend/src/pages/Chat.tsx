@@ -216,7 +216,7 @@ export default function Chat() {
     addMessageToConversation(currentConversationId, tempUserMessage)
 
     try {
-      const response = await chatAPI.sendMessage(currentConversationId, messageContent, useSSHAgent)
+      const response = await chatAPI.sendMessage(currentConversationId, messageContent, useSSHAgent, selectedServerIds)
       const data = response.data.data
       // ✅ NOUVEAU: Récupérer le mode d'exécution
       const executionMode = response.data.mode

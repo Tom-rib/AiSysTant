@@ -82,7 +82,13 @@ export default function ServerSelector({ servers, selectedServerIds = [], onServ
   const serversByGroup: Record<number, SSHServer[]> = {}
   
   groups.forEach(g => {
-    serversByGroup[g.id || 0] = servers.filter(s => g.servers?.includes(s.id))
+    const groupServersFiltered = servers.filter(s => g.servers?.includes(s.id))
+    serversByGroup[g.id || 0] = groupServersFiltered
+    console.debug(`Groupe "${g.name}": ${g.servers?.length || 0} serveurs attendus, ${groupServersFiltered.length} trouvés`, {
+      expected: g.servers,
+      available: servers.map(s => s.id),
+      matched: groupServersFiltered.map(s => s.id)
+    })
   })
 
   return (

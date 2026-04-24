@@ -100,7 +100,7 @@ export class ChatController {
     try {
       const userId = req.user!.id;
       const conversationId = parseInt(req.params.id);
-      const { content, useSSHAgent, serverId } = req.body;
+      const { content, useSSHAgent, serverIds } = req.body;
 
       if (!content) {
         return res.status(400).json({
@@ -161,35 +161,62 @@ export class ChatController {
             
             // ✅ NOUVEAU: Récupérer les serveurs disponibles
             const userServers = await SSHService.getServersByUserId(userId);
-            let targetServerId = serverId || (userServers.length > 0 ? userServers[0].id : null);
+            
+            // ✅ MODIFIÉ: Utiliser serverIds (array) au lieu de serverId (single)
+            let targetServerIds = (serverIds && serverIds.length > 0) 
+              ? serverIds 
+              : (userServers.length > 0 ? [userServers[0].id] : []);
 
-            if (!targetServerId || userServers.length === 0) {
+            if (targetServerIds.length === 0 || userServers.length === 0) {
               // Pas de serveur, utiliser le mode confirmation
               console.log(`[ChatController] No server available, fallback to confirmation mode`);
               aiResponse = await ClaudeService.sendMessage(content, userApiKey, conversationId);
               executionMode = 'awaiting_confirmation';
             } else {
-              // ✅ NOUVEAU: Exécuter la commande directement
-              console.log(`[ChatController] Executing on server ${targetServerId}: ${parsed.commandToExecute}`);
-              const result = await SSHService.executeCommand(targetServerId, parsed.commandToExecute, userId);
+              // ✅ MODIFIÉ: Exécuter sur TOUS les serveurs sélectionnés
+              console.log(`[ChatController] Executing on servers ${targetServerIds.join(',')} : ${parsed.commandToExecute}`);
+              
+              const results: any[] = [];
+              for (const serverId of targetServerIds) {
+                try {
+                  const result = await SSHService.executeCommand(serverId, parsed.commandToExecute, userId);
+                  results.push({
+                    serverId,
+                    command: result.command,
+                    stdout: result.output,
+                    stderr: result.error,
+                    code: result.exitCode
+                  });
+                  console.log(`[ChatController] Command executed on server ${serverId}: code=${result.exitCode}`);
+                } catch (error: any) {
+                  results.push({
+                    serverId,
+                    command: parsed.commandToExecute,
+                    error: error.message
+                  });
+                  console.error(`[ChatController] Error executing on server ${serverId}:`, error);
+                }
+              }
 
-              // ✅ NOUVEAU: Convertir CommandResult en CommandExecutionResult
-              const executionResult = {
-                command: result.command,
-                stdout: result.output,
-                stderr: result.error,
-                code: result.exitCode
+              // ✅ MODIFIÉ: Formater les résultats de tous les serveurs
+              const formattedResults = results.map((r: any) => 
+                `[Serveur ${r.serverId}]\nStatus: ${r.code === 0 ? 'Succès' : 'Erreur'}\n${r.stdout || r.error}`
+              ).join('\n\n---\n\n');
+              
+              const combinedResult: any = {
+                command: parsed.commandToExecute,
+                stdout: formattedResults,
+                stderr: results.filter((r: any) => r.code !== 0).map((r: any) => r.stderr || r.error).join('\n'),
+                code: results.every((r: any) => r.code === 0) ? 0 : 1
               };
+              const explanation = await AIEngine.explainResult(combinedResult, userApiKey);
 
-              // ✅ NOUVEAU: Expliquer le résultat avec Claude
-              const explanation = await AIEngine.explainResult(executionResult, userApiKey);
-
-              // ✅ NOUVEAU: Sauvegarder le message assistant avec metadata
+              // ✅ MODIFIÉ: Sauvegarder
               aiResponse = explanation;
-              commandOutput = result.output;
+              commandOutput = results.map((r: any) => `[Serveur ${r.serverId}]\n${r.stdout || r.error}`).join('\n\n');
               executionMode = 'auto_executed';
 
-              console.log(`[ChatController] Command executed successfully: code=${result.exitCode}`);
+              console.log(`[ChatController] All commands executed successfully`);
             }
           }
           // ✅ NOUVEAU: Mode confirmation pour risque moyen/haut
