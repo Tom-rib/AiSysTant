@@ -91,6 +91,16 @@ export default function ServerSelector({ servers, selectedServerIds = [], onServ
     })
   })
 
+  useEffect(() => {
+    console.debug('[ServerSelector] Component update:', {
+      totalServers: servers.length,
+      totalGroups: groups.length,
+      selectedCount: selected.size,
+      serverIds: servers.map(s => s.id),
+      groupIds: groups.map(g => g.id)
+    })
+  }, [servers, groups])
+
   return (
     <div className="relative inline-block">
       <button
