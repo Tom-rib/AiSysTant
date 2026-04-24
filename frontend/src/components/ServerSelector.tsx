@@ -73,7 +73,7 @@ export default function ServerSelector({ servers, selectedServerId, onServerSele
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+        <div className="absolute top-full left-0 mt-2 w-96 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
           {/* Ungrouped Servers */}
           {ungroupedServers.length > 0 && (
             <>
