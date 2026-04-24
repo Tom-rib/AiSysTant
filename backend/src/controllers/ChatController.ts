@@ -250,13 +250,18 @@ export class ChatController {
           });
         }
 
+        // ✅ MODIFIÉ: Passer serverIds à l'agent
+        const targetServers = serverIds && serverIds.length > 0
+          ? userServers.filter(s => serverIds.includes(s.id))
+          : userServers;
+
         // Exécuter l'agent AI avec capacités SSH
         const agentResult = await AIAgentService.runSSHAgent(
           content,
           conversationId,
           userId,
           userApiKey,
-          userServers
+          targetServers
         );
 
         aiResponse = agentResult.response;
