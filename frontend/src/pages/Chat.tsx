@@ -45,7 +45,7 @@ export default function Chat() {
   // ✅ NOUVEAU: State pour gérer l'onglet actif (conversations ou guide)
   const [activeTab, setActiveTab] = useState<'conversations' | 'guide'>('conversations')
   const [servers, setServers] = useState<SSHServer[]>([])
-  const [selectedServerId, setSelectedServerId] = useState<number>()
+  const [selectedServerIds, setSelectedServerIds] = useState<number[]>([])
   const [showNewConvModal, setShowNewConvModal] = useState(false)
   const [newConvTitle, setNewConvTitle] = useState('')
   const [newConvGroupId, setNewConvGroupId] = useState<number>()
@@ -216,7 +216,7 @@ export default function Chat() {
     addMessageToConversation(currentConversationId, tempUserMessage)
 
     try {
-      const response = await chatAPI.sendMessage(currentConversationId, messageContent, useSSHAgent)
+      const response = await chatAPI.sendMessage(currentConversationId, messageContent, useSSHAgent, selectedServerIds)
       const data = response.data.data
       // ✅ NOUVEAU: Récupérer le mode d'exécution
       const executionMode = response.data.mode
@@ -468,8 +468,9 @@ export default function Chat() {
                     </label>
                     <ServerSelector
                       servers={servers}
-                      selectedServerId={selectedServerId}
-                      onServerSelect={setSelectedServerId}
+                      groups={serverGroups}
+                      selectedServerIds={selectedServerIds}
+                      onServerSelect={setSelectedServerIds}
                     />
                   </div>
                   <div className="flex items-end space-x-4">
