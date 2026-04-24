@@ -1,0 +1,30 @@
+# ChatOps-Commander Code Owners
+# This file defines who must review changes to specific areas of the code.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for all code
+* @Tom-rib
+
+# Frontend code
+/frontend/ @Tom-rib
+
+# Backend code
+/backend/ @Tom-rib
+
+# Admin panel
+/admin-panel/ @Tom-rib
+
+# Configuration files
+*.json @Tom-rib
+*.yml @Tom-rib
+*.yaml @Tom-rib
+docker-compose.yml @Tom-rib
+Makefile @Tom-rib
+
+# Documentation
+*.md @Tom-rib
+/docs/ @Tom-rib
+
+# Security
+SECURITY.md @Tom-rib
+.github/CODEOWNERS @Tom-rib
