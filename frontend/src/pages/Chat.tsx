@@ -4,7 +4,7 @@ import ChatMessage from '../components/ChatMessage'
 // ✅ NOUVEAU: Importer le guide ChatIA
 import ChatIAGuide from '../components/ChatIAGuide'
 import ServerSelector from '../components/ServerSelector'
-import { chatAPI, sshAPI } from '../services/api'
+import { chatAPI, sshAPI, groupsAPI } from '../services/api'
 import { socketService } from '../services/socket'
 import { useChat } from '../context/ChatContext'
 
@@ -85,6 +85,7 @@ export default function Chat() {
     try {
       const response = await sshAPI.getServers()
       const data = response.data.data || response.data.servers || response.data || []
+      console.log('[Chat] Servers loaded:', data)
       setServers(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error loading servers:', error)
@@ -94,8 +95,9 @@ export default function Chat() {
 
   const loadServerGroups = async () => {
     try {
-      const response = (sshAPI as any).getServerGroups?.() || { data: { data: [] } }
-      const groups = response.data?.data || response.data?.groups || []
+      const response = await groupsAPI.list()
+      const groups = response.data || []
+      console.log('[Chat] Groups loaded:', groups)
       setServerGroups(Array.isArray(groups) ? groups : [])
     } catch (error) {
       console.error('Error loading server groups:', error)
