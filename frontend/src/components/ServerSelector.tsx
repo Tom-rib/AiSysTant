@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Check } from 'lucide-react'
 
 interface SSHServer {
   id: number
@@ -19,13 +19,14 @@ interface ServerGroup {
 
 interface ServerSelectorProps {
   servers: SSHServer[]
-  selectedServerId?: number
-  onServerSelect: (serverId: number) => void
+  selectedServerIds?: number[]
+  onServerSelect: (serverIds: number[]) => void
 }
 
-export default function ServerSelector({ servers, selectedServerId, onServerSelect }: ServerSelectorProps) {
+export default function ServerSelector({ servers, selectedServerIds = [], onServerSelect }: ServerSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [groups, setGroups] = useState<ServerGroup[]>([])
+  const [selected, setSelected] = useState<Set<number>>(new Set(selectedServerIds))
 
   useEffect(() => {
     const saved = localStorage.getItem('serverGroups')
@@ -38,7 +39,37 @@ export default function ServerSelector({ servers, selectedServerId, onServerSele
     }
   }, [])
 
-  const selectedServer = servers.find(s => s.id === selectedServerId)
+  useEffect(() => {
+    setSelected(new Set(selectedServerIds))
+  }, [selectedServerIds])
+
+  const toggleServer = (serverId: number) => {
+    const newSelected = new Set(selected)
+    if (newSelected.has(serverId)) {
+      newSelected.delete(serverId)
+    } else {
+      newSelected.add(serverId)
+    }
+    setSelected(newSelected)
+    onServerSelect(Array.from(newSelected))
+  }
+
+  const toggleGroup = (groupServers: number[] | undefined) => {
+    if (!groupServers) return
+    const groupSet = new Set(groupServers)
+    const allSelected = groupServers.every(id => selected.has(id))
+    
+    const newSelected = new Set(selected)
+    if (allSelected) {
+      groupServers.forEach(id => newSelected.delete(id))
+    } else {
+      groupServers.forEach(id => newSelected.add(id))
+    }
+    setSelected(newSelected)
+    onServerSelect(Array.from(newSelected))
+  }
+
+  const selectedServer = servers.find(s => s.id === Array.from(selected)[0])
   
   const groupMap: Record<number, ServerGroup> = {}
   groups.forEach(g => {
@@ -60,9 +91,9 @@ export default function ServerSelector({ servers, selectedServerId, onServerSele
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-slate-950 font-medium"
       >
-        {selectedServer ? (
+        {selected.size > 0 ? (
           <>
-            <span>🖥️ {selectedServer.name}</span>
+            <span>🖥️ {selected.size} serveur{selected.size > 1 ? 's' : ''} sélectionné{selected.size > 1 ? 's' : ''}</span>
           </>
         ) : (
           <>
@@ -83,16 +114,21 @@ export default function ServerSelector({ servers, selectedServerId, onServerSele
               {ungroupedServers.map(server => (
                 <button
                   key={server.id}
-                  onClick={() => {
-                    onServerSelect(server.id)
-                    setIsOpen(false)
-                  }}
-                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b text-sm transition ${
-                    selectedServerId === server.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                  onClick={() => toggleServer(server.id)}
+                  className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b text-sm transition flex items-center gap-3 ${
+                    selected.has(server.id) ? 'bg-blue-50' : ''
                   }`}
                 >
-                  <div className="font-medium text-slate-950">{server.name}</div>
-                  <div className="text-xs text-gray-600">{server.username}@{server.host}:{server.port}</div>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(server.id)}
+                    onChange={() => toggleServer(server.id)}
+                    className="w-4 h-4 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="font-medium text-slate-950">{server.name}</div>
+                    <div className="text-xs text-gray-600">{server.username}@{server.host}:{server.port}</div>
+                  </div>
                 </button>
               ))}
             </>
@@ -103,24 +139,41 @@ export default function ServerSelector({ servers, selectedServerId, onServerSele
             const groupServers = serversByGroup[group.id || 0]
             if (groupServers.length === 0) return null
 
+            const allGroupSelected = groupServers.every(s => selected.has(s.id))
+
             return (
               <div key={group.id}>
-                <div className="px-4 py-2 text-xs font-semibold bg-gray-50 border-b" style={{ color: '#333' }}>
-                  {group.icon} {group.name.toUpperCase()} ({groupServers.length})
+                <div className="px-4 py-2 text-xs font-semibold bg-gray-50 border-b flex items-center justify-between" style={{ color: '#333' }}>
+                  <div className="flex items-center gap-2">
+                    <span>{group.icon} {group.name.toUpperCase()} ({groupServers.length})</span>
+                  </div>
+                  <button
+                    onClick={() => toggleGroup(group.servers)}
+                    className={`px-2 py-1 rounded text-xs font-semibold transition ${
+                      allGroupSelected ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    }`}
+                  >
+                    {allGroupSelected ? '✓ Tous' : 'Tous'}
+                  </button>
                 </div>
                 {groupServers.map(server => (
                   <button
                     key={server.id}
-                    onClick={() => {
-                      onServerSelect(server.id)
-                      setIsOpen(false)
-                    }}
-                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b text-sm transition ${
-                      selectedServerId === server.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                    onClick={() => toggleServer(server.id)}
+                    className={`w-full text-left px-4 py-3 hover:bg-gray-50 border-b text-sm transition flex items-center gap-3 ${
+                      selected.has(server.id) ? 'bg-blue-50' : ''
                     }`}
                   >
-                    <div className="font-medium text-slate-950">{server.name}</div>
-                    <div className="text-xs text-gray-600">{server.username}@{server.host}:{server.port}</div>
+                    <input
+                      type="checkbox"
+                      checked={selected.has(server.id)}
+                      onChange={() => toggleServer(server.id)}
+                      className="w-4 h-4 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-slate-950">{server.name}</div>
+                      <div className="text-xs text-gray-600">{server.username}@{server.host}:{server.port}</div>
+                    </div>
                   </button>
                 ))}
               </div>
