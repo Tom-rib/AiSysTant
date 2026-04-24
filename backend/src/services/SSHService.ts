@@ -459,11 +459,15 @@ export class SSHService {
       const systemCheck = await ssh.execCommand('[ -f /etc/debian_version ] && echo debian || echo other');
       const isDebian = systemCheck.stdout.trim() === 'debian';
 
+      // ✅ MODIFIÉ: Rendre non-interactive avec DEBIAN_FRONTEND
       const command = isDebian 
-        ? `sudo apt-get update && sudo apt-get install -y ${packageName}`
+        ? `sudo DEBIAN_FRONTEND=noninteractive apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ${packageName}`
         : `sudo yum install -y ${packageName}`;
 
+      console.log(`[SSHService] Installing ${packageName} on server ${serverId}: ${command}`);
       const result = await ssh.execCommand(command);
+
+      console.log(`[SSHService] Install result - code: ${result.code}, stdout: ${result.stdout.substring(0, 100)}`);
 
       return {
         command,
@@ -473,6 +477,7 @@ export class SSHService {
         executedAt: new Date()
       };
     } catch (error: any) {
+      console.error(`[SSHService] Install error:`, error);
       return {
         command: `install ${packageName}`,
         output: '',
@@ -496,11 +501,15 @@ export class SSHService {
       const systemCheck = await ssh.execCommand('[ -f /etc/debian_version ] && echo debian || echo other');
       const isDebian = systemCheck.stdout.trim() === 'debian';
 
+      // ✅ MODIFIÉ: Rendre entièrement non-interactive
       const command = isDebian 
-        ? `sudo apt-get remove --purge -y ${packageName} && sudo apt-get autoremove -y`
+        ? `sudo DEBIAN_FRONTEND=noninteractive apt-get remove --purge -y ${packageName} && sudo DEBIAN_FRONTEND=noninteractive apt-get autoremove --purge -y`
         : `sudo yum remove -y ${packageName}`;
 
+      console.log(`[SSHService] Uninstalling ${packageName} on server ${serverId}: ${command}`);
       const result = await ssh.execCommand(command);
+
+      console.log(`[SSHService] Uninstall result - code: ${result.code}, stdout: ${result.stdout.substring(0, 100)}`);
 
       return {
         command,
@@ -510,6 +519,7 @@ export class SSHService {
         executedAt: new Date()
       };
     } catch (error: any) {
+      console.error(`[SSHService] Uninstall error:`, error);
       return {
         command: `uninstall ${packageName}`,
         output: '',
