@@ -2,7 +2,7 @@ import { ClaudeService } from './ClaudeService';
 import { SSHService } from './SSHService';
 
 export interface AIAction {
-  type: 'command' | 'install' | 'read_file' | 'write_file' | 'info';
+  type: 'command' | 'install' | 'uninstall' | 'read_file' | 'write_file' | 'info';
   serverId: number;
   params: any;
 }
@@ -17,6 +17,7 @@ export class AIAgentService {
     // Regex pour détecter les actions - plus permissive pour gérer les espaces
     const commandRegex = /\[COMMAND:\s*(\d+)\s*:\s*(.+?)\s*\]/g;
     const installRegex = /\[INSTALL:\s*(\d+)\s*:\s*(.+?)\s*\]/g;
+    const uninstallRegex = /\[UNINSTALL:\s*(\d+)\s*:\s*(.+?)\s*\]/g;
     const readFileRegex = /\[READ:\s*(\d+)\s*:\s*(.+?)\s*\]/g;
     const writeFileRegex = /\[WRITE:\s*(\d+)\s*:\s*(.+?)\s*\|\s*(.+?)\s*\]/g;
     const infoRegex = /\[INFO:\s*(\d+)\s*\]/g;
@@ -40,6 +41,17 @@ export class AIAgentService {
       console.log(`Found INSTALL action: server ${match[1]}, package: ${packageName}`);
       actions.push({
         type: 'install',
+        serverId: parseInt(match[1]),
+        params: { packageName }
+      });
+    }
+
+    // ✅ NOUVEAU: Extraire les désinstallations
+    while ((match = uninstallRegex.exec(response)) !== null) {
+      const packageName = match[2].trim();
+      console.log(`Found UNINSTALL action: server ${match[1]}, package: ${packageName}`);
+      actions.push({
+        type: 'uninstall',
         serverId: parseInt(match[1]),
         params: { packageName }
       });
@@ -114,6 +126,19 @@ export class AIAgentService {
 
         case 'install': {
           const result = await SSHService.installPackage(
+            action.serverId,
+            action.params.packageName
+          );
+          return {
+            success: result.exitCode === 0,
+            output: result.output,
+            error: result.error
+          };
+        }
+
+        // ✅ NOUVEAU: Case pour désinstaller
+        case 'uninstall': {
+          const result = await SSHService.uninstallPackage(
             action.serverId,
             action.params.packageName
           );
@@ -200,6 +225,7 @@ INSTRUCTIONS CRITIQUES - Tu DOIS toujours:
 FORMAT DES ACTIONS (ne change PAS ces formats):
 - Exécuter une commande: [COMMAND:SERVER_ID:ta_commande_ici]
 - Installer un paquet: [INSTALL:SERVER_ID:nom_du_paquet]
+- Désinstaller un paquet: [UNINSTALL:SERVER_ID:nom_du_paquet]
 - Lire un fichier: [READ:SERVER_ID:/chemin/du/fichier]
 - Écrire un fichier: [WRITE:SERVER_ID:/chemin/fichier|contenu_à_écrire]
 - Obtenir les infos système: [INFO:SERVER_ID]

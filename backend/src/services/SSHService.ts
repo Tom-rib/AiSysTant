@@ -483,6 +483,43 @@ export class SSHService {
     }
   }
 
+  // ✅ NOUVEAU: Désinstaller un paquet
+  static async uninstallPackage(serverId: number, packageName: string): Promise<CommandResult> {
+    try {
+      // Détecter le gestionnaire de paquets
+      const ssh = this.connections.get(serverId);
+      if (!ssh) {
+        throw new Error('Connexion SSH introuvable');
+      }
+
+      // Vérifier le système
+      const systemCheck = await ssh.execCommand('[ -f /etc/debian_version ] && echo debian || echo other');
+      const isDebian = systemCheck.stdout.trim() === 'debian';
+
+      const command = isDebian 
+        ? `sudo apt-get remove --purge -y ${packageName} && sudo apt-get autoremove -y`
+        : `sudo yum remove -y ${packageName}`;
+
+      const result = await ssh.execCommand(command);
+
+      return {
+        command,
+        output: result.stdout,
+        error: result.stderr,
+        exitCode: result.code || 0,
+        executedAt: new Date()
+      };
+    } catch (error: any) {
+      return {
+        command: `uninstall ${packageName}`,
+        output: '',
+        error: error.message,
+        exitCode: 1,
+        executedAt: new Date()
+      };
+    }
+  }
+
   // Déconnecter tous les serveurs
   static async disconnectAll(): Promise<void> {
     for (const [serverId, ssh] of this.connections.entries()) {
